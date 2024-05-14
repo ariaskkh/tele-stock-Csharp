@@ -76,5 +76,11 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TelegramBot\TelegramBot.csproj">
+      <Project>{55ffe46f-b24f-44cd-859d-9133c4d315bc}</Project>
+      <Name>TelegramBot</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

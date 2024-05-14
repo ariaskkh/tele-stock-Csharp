@@ -5,6 +5,8 @@ VisualStudioVersion = 17.9.34728.123
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeleStockClient", "TeleStockClient\TeleStockClient.csproj", "{A7A189DA-BC38-4C5A-AC7E-3B7473D2765C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TelegramBot", "TelegramBot\TelegramBot.csproj", "{55FFE46F-B24F-44CD-859D-9133C4D315BC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{A7A189DA-BC38-4C5A-AC7E-3B7473D2765C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A7A189DA-BC38-4C5A-AC7E-3B7473D2765C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A7A189DA-BC38-4C5A-AC7E-3B7473D2765C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{55FFE46F-B24F-44CD-859D-9133C4D315BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{55FFE46F-B24F-44CD-859D-9133C4D315BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{55FFE46F-B24F-44CD-859D-9133C4D315BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{55FFE46F-B24F-44CD-859D-9133C4D315BC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
