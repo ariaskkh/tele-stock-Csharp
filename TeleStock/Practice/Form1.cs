@@ -25,9 +25,10 @@ namespace Practice
 
         private async Task Start_Bot()
         {
-            var me = await _telegramBot.GetMeAsync();
+            //var me = await _telegramBot.GetMeAsync();
+            await _telegramBot.SendMessage("가라가라 메세지 !!!");
 
-            textBox1.Text = ($"Hello, World! I am user {me.Id} and my name is {me.FirstName}");
+            //textBox1.Text = ($"Hello, World! I am user {me.Id} and my name is {me.FirstName}");
         }
     }
 }
