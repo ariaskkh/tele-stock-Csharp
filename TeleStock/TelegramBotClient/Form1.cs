@@ -26,7 +26,7 @@ namespace TelegramBotClient
 
         async Task SendTelegramMessage()
         {
-            await _telegramBot.SendMessage();
+            //await _telegramBot.SendMessage();
         }
     }
 }

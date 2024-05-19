@@ -1,5 +1,6 @@
 ﻿using Common.Interfaces;
 using System.Net;
+using System.Text;
 using TelegramBot;
 
 
@@ -12,7 +13,14 @@ namespace TelegramBot.Services
         public TreasuryStockService(ILogger logger)
         {
             this._logger = logger;
+            SetHttpClient();
             GetData();
+        }
+
+        static void SetHttpClient()
+        {
+            // server가 get 요청 client의 브라우저 정보로 User-Agent 사용
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", "Chrome/58.0.3029.110");
         }
 
         void GetData()
@@ -24,51 +32,47 @@ namespace TelegramBot.Services
         {
             var _pageNumber = "1"; // 페이지 번호
             var _pageCount = "100"; // 페이지 별 건수
-            var startDate = GetTodayDate(); // 20240517
+            var startDate = "20240514"; // 20240517
             var endDate = GetTodayDate();
             var majorInfoReport = "B001";
-            var majorInfoReportUrl = "https://opendart.fss.or.kr/api/list.json";
-
-            while (true)
+            var majorInfoReportUrl = "http://opendart.fss.or.kr/api/list.json";
+            var parameters = new Dictionary<string, string>
             {
-                var parameters = new Dictionary<string, string>
-                {
-                    ["crtfc_key"] = PrivateData.DART_API_KEY,
-                    ["page_no"] = _pageNumber,
-                    ["page_count"] = _pageCount,
-                    ["bgn_de"] = startDate,
-                    ["end_de"] = endDate,
-                    ["pblntf_detail_ty"] = majorInfoReport,
-                };
-                var queryString = string.Join("&", parameters.Select(keyValue => $"{Uri.EscapeDataString(keyValue.Key)}={Uri.EscapeDataString(keyValue.Value)}"));
-                var url = majorInfoReportUrl + queryString;
+                ["crtfc_key"] = PrivateData.DART_API_KEY,
+                ["page_no"] = _pageNumber,
+                ["page_count"] = _pageCount,
+                ["bgn_de"] = startDate,
+                ["end_de"] = endDate,
+                ["pblntf_detail_ty"] = majorInfoReport,
+            };
+            var queryString = string.Join("&", parameters.Select(keyValue => $"{Uri.EscapeDataString(keyValue.Key)}={Uri.EscapeDataString(keyValue.Value)}"));
+            var url = $"{majorInfoReportUrl}?{queryString}";
 
-                try
+            try
+            {
+                using (var response = await _httpClient.GetAsync(url))
                 {
-                    using (var response = await _httpClient.GetAsync(url))
+                    _logger.Log(HttpStatusCode.OK.ToString());
+                    _logger.Log(response.StatusCode.ToString());
+
+                    if (HttpStatusCode.OK == response.StatusCode)
                     {
-                        Console.WriteLine(response.StatusCode);
-
-                        if (HttpStatusCode.OK == response.StatusCode)
-                        {
-                            string body = await response.Content.ReadAsStringAsync();
-                            Console.WriteLine(body);
-                        }
-                        else
-                        {
-                            Console.WriteLine($"reason: {response.ReasonPhrase}");
-                        }
+                        string body = await response.Content.ReadAsStringAsync();
+                        _logger.Log($"body: {body}");
+                    }
+                    else
+                    {
+                        _logger.Log($"reason: {response.ReasonPhrase}");
                     }
                 }
-                catch (HttpRequestException ex)
-                {
-                    Console.WriteLine($"HttpRequestException Message: {ex.Message}");
-                    Console.WriteLine("==== 서버에 연결할 수 없습니다. ====");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Exception: {ex.Message}");
-                }
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.Log($"HttpRequestException Message: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                _logger.Log($"Exception: {ex.Message}");
             }
         }
 
