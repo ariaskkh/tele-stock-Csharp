@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using Common.Interfaces;
+using System.Net;
 using TelegramBot;
 
 
@@ -7,8 +8,10 @@ namespace TelegramBot.Services
     public class TreasuryStockService
     {
         static readonly HttpClient _httpClient = new HttpClient();
-        public TreasuryStockService()
+        readonly ILogger _logger;
+        public TreasuryStockService(ILogger logger)
         {
+            this._logger = logger;
             GetData();
         }
 
@@ -83,6 +86,7 @@ namespace TelegramBot.Services
 
         public List<string> GetMessages()
         {
+            _logger.Log("메세지 보내기 성공!");
             return new List<string> { "이거시 바로", "메세지다" };
         }
     }

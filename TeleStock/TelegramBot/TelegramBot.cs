@@ -1,7 +1,6 @@
-﻿using Telegram.Bot;
-using Telegram.Bot.Types;
+﻿using Common.Interfaces;
+using Telegram.Bot;
 using TelegramBot.Services;
-using System.Windows;
 
 namespace TelegramBot
 {
@@ -9,10 +8,10 @@ namespace TelegramBot
     {
         TelegramBotClient? _botClient;
         TreasuryStockService _treasuryStockService;
-        public TelegramBot()
+        public TelegramBot(ILogger logger)
         {
             _botClient = new TelegramBotClient(PrivateData.ACCESS_TOKEN);
-            _treasuryStockService = new TreasuryStockService();
+            _treasuryStockService = new TreasuryStockService(logger);
         }
 
         public async Task<Telegram.Bot.Types.User> GetMeAsync()

@@ -9,7 +9,7 @@ namespace Practice
         public Form1()
         {
             InitializeComponent();
-            _telegramBot = new TelegramBot.TelegramBot();
+            //_telegramBot = new TelegramBot.TelegramBot();
         }
 
         private void Form1_Load(object sender, EventArgs e)
