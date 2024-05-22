@@ -14,12 +14,13 @@ namespace TelegramBot
             _treasuryStockService = new TreasuryStockService(logger);
         }
 
-        public async Task<Telegram.Bot.Types.User> GetMeAsync()
+        public async Task Start()
         {
-            return await _botClient.GetMeAsync();
+            await _treasuryStockService.GetData();
+            //SendMessage();
         }
 
-        public async Task SendMessage()
+        private async Task SendMessage()
         {
             var messages = _treasuryStockService.GetMessages();
             foreach (var message in messages)

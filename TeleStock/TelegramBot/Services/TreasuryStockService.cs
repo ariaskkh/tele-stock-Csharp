@@ -1,6 +1,8 @@
 ﻿using Common.Interfaces;
+using System.Collections.Generic;
 using System.Net;
 using System.Text;
+using System.Text.Json;
 using TelegramBot;
 
 
@@ -10,11 +12,14 @@ namespace TelegramBot.Services
     {
         static readonly HttpClient _httpClient = new HttpClient();
         readonly ILogger _logger;
+        //private string FILE_PATH = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "../../../../TelegramBot/Data/"));
+
+        private List<JsonElement> _overviewData = new();
+
         public TreasuryStockService(ILogger logger)
         {
             this._logger = logger;
             SetHttpClient();
-            GetData();
         }
 
         static void SetHttpClient()
@@ -23,58 +28,114 @@ namespace TelegramBot.Services
             _httpClient.DefaultRequestHeaders.Add("User-Agent", "Chrome/58.0.3029.110");
         }
 
-        void GetData()
+        public async Task GetData()
         {
-            GetStockOverview();
+            _overviewData = await GetStockOverview();
+            if (_overviewData.Count == 0)
+            {
+                _logger.Log("해당 조건의 overview 데이터가 존재하지 않습니다.");
+                return;
+            }
         }
 
-        async void GetStockOverview()
+        async Task<List<JsonElement>> GetStockOverview()
         {
-            var _pageNumber = "1"; // 페이지 번호
-            var _pageCount = "100"; // 페이지 별 건수
-            var startDate = "20240514"; // 20240517
+            var _pageNumber = 1; // 페이지 번호
+            var _pageCount = 2; // 페이지 별 건수
+            var startDate = "20240517"; // TEST
             var endDate = GetTodayDate();
             var majorInfoReport = "B001";
             var majorInfoReportUrl = "http://opendart.fss.or.kr/api/list.json";
             var parameters = new Dictionary<string, string>
             {
                 ["crtfc_key"] = PrivateData.DART_API_KEY,
-                ["page_no"] = _pageNumber,
-                ["page_count"] = _pageCount,
+                ["page_count"] = _pageCount.ToString(),
                 ["bgn_de"] = startDate,
                 ["end_de"] = endDate,
                 ["pblntf_detail_ty"] = majorInfoReport,
             };
-            var queryString = string.Join("&", parameters.Select(keyValue => $"{Uri.EscapeDataString(keyValue.Key)}={Uri.EscapeDataString(keyValue.Value)}"));
-            var url = $"{majorInfoReportUrl}?{queryString}";
 
-            try
+            var resultAll = new List<JsonElement>();
+
+
+            while (true)
             {
-                using (var response = await _httpClient.GetAsync(url))
+                try
                 {
-                    _logger.Log(HttpStatusCode.OK.ToString());
-                    _logger.Log(response.StatusCode.ToString());
+                    parameters["page_no"] = _pageNumber.ToString();
+                    var queryString = string.Join("&", parameters.Select(keyValue => $"{Uri.EscapeDataString(keyValue.Key)}={Uri.EscapeDataString(keyValue.Value)}"));
+                    var url = $"{majorInfoReportUrl}?{queryString}";
+                    // HttpClientMessage에 dispose()가 있으므로 resouce release를 위해 using 사용
+                    using (var response = await _httpClient.GetAsync(url))
+                    {
+                        if (HttpStatusCode.OK == response.StatusCode)
+                        {
+                            string body = await response.Content.ReadAsStringAsync();
+                            using (JsonDocument doc = JsonDocument.Parse(body))
+                            {
+                                JsonElement overviewData = doc.RootElement.GetProperty("list");
+                                var filteredOverviewData = FilterOverviewData(overviewData);
 
-                    if (HttpStatusCode.OK == response.StatusCode)
-                    {
-                        string body = await response.Content.ReadAsStringAsync();
-                        _logger.Log($"body: {body}");
-                    }
-                    else
-                    {
-                        _logger.Log($"reason: {response.ReasonPhrase}");
+                                foreach (var item in filteredOverviewData)
+                                {
+                                    resultAll.Add(item.Clone()); // using 밖에서 dispose 되기 때문에 clone() 필요
+                                }
+
+                                var totalPage = doc.RootElement.GetProperty("total_page").GetInt32();
+                                if (_pageNumber == totalPage)
+                                    break;
+                                _pageNumber++;
+                            }
+                        }
+                        else
+                        {
+                            _logger.Log($"reason: {response.ReasonPhrase}");
+                            return default;
+                        }
                     }
                 }
+                catch (HttpRequestException ex)
+                {
+                    _logger.Log($"HttpRequestException Message: {ex.Message}");
+                    return default;
+                }
+                catch (Exception ex)
+                {
+                    _logger.Log($"Exception: {ex.Message}");
+                    return default;
+                }
             }
-            catch (HttpRequestException ex)
-            {
-                _logger.Log($"HttpRequestException Message: {ex.Message}");
-            }
-            catch (Exception ex)
-            {
-                _logger.Log($"Exception: {ex.Message}");
-            }
+            
+            // TODO: cache check logic
+            return resultAll;
         }
+
+        private List<JsonElement> FilterOverviewData(JsonElement OverviewArray)
+        {
+            var keyword = "자기주식";
+            var KOSPI = "Y";
+            var KOSDAQ = "K";
+            List<JsonElement> overviewArray = new();
+
+            foreach (var overviewObject in OverviewArray.EnumerateArray())
+            {
+                string? reportNm = overviewObject.GetProperty("report_nm").GetString();
+                string? corpCls = overviewObject.GetProperty("corp_cls").GetString();
+
+                if (reportNm.Contains(keyword) && (corpCls == KOSPI || corpCls == KOSDAQ))
+                {
+                    overviewArray.Add(overviewObject);
+                }
+            }
+            return overviewArray;
+        }
+
+        // TODO: caching
+        //private async void SaveOverviewJson(List<JsonElement> result)
+        //{
+        //    string finalJson = JsonSerializer.Serialize(result);
+        //    await File.WriteAllTextAsync(Path.Combine(FILE_PATH, "list.json"), finalJson);
+        //}
 
         private string GetTodayDate()
         {

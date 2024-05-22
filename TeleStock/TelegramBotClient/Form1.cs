@@ -5,8 +5,8 @@ namespace TelegramBotClient
 {
     public partial class Form1 : Form
     {
-        ILogger _logger;
-        TelegramBot.TelegramBot _telegramBot;
+        ILogger? _logger;
+        TelegramBot.TelegramBot? _telegramBot;
         public Form1()
         {
             InitializeComponent();
@@ -21,12 +21,10 @@ namespace TelegramBotClient
 
         void startButton_Click(object sender, EventArgs e)
         {
-            SendTelegramMessage();
-        }
-
-        async Task SendTelegramMessage()
-        {
-            //await _telegramBot.SendMessage();
+            if (_telegramBot != null)
+            {
+                _telegramBot.Start();
+            }
         }
     }
 }
