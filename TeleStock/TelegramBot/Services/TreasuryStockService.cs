@@ -6,6 +6,13 @@ using System.Text;
 using System.Text.Json;
 using TelegramBot;
 
+enum BusinessReportType
+{
+    FIRST_QUARTER = 11013, // 분기보고서
+    SECOND_QUARTER = 11012, // 반기보고서
+    THIRD_QUARTER = 11014, // 분기보고서
+    FOURTH_QUARTER = 11011, // 사업보고서
+}
 
 namespace TelegramBot.Services
 {
@@ -219,7 +226,7 @@ namespace TelegramBot.Services
         private async Task<List<JsonElement>> GetFloatingStockRateData(List<JsonElement> overviewData)
         {
             List<JsonElement> floatingDataResult = new();
-            // 이걸로 되나???? 한번에 overviewData에 여러개 들어있을 수 있는지 확인 
+            List<BusinessReportType> latestReportCodeList = GetLatestReportCode();
             foreach (var overviewJson in overviewData)
             {
                 var floatingStockUrl = "https://opendart.fss.or.kr/api/mrhlSttus.json";
@@ -227,40 +234,23 @@ namespace TelegramBot.Services
                 {
                     ["crtfc_key"] = PrivateData.DART_API_KEY,
                     ["corp_code"] = overviewJson.GetProperty("corp_code").ToString(),
-                    ["bsns_year"] = "2023", // 사업 년도
-                    ["reprt_code"] = "11011", // 보고서 코드
+                    ["bsns_year"] = GetLatestReportBusinessYear(latestReportCodeList[0]), // 사업 년도
+                    ["reprt_code"] = ((int)latestReportCodeList[0]).ToString(), // 보고서 코드
                 };
-                var queryString = GetQueryString(parameters);
-                var url = $"{floatingStockUrl}?{queryString}";
 
-                try
+                bool isFetchSuccess = await TryFetchFloatingStockRateData(floatingStockUrl, parameters, floatingDataResult);
+
+                if (!isFetchSuccess)
                 {
-                    using (var response = await _httpClient.GetAsync(url))
+                    parameters["bsns_year"] = GetLatestReportBusinessYear(latestReportCodeList[1]);
+                    parameters["reprt_code"] = ((int)latestReportCodeList[1]).ToString();
+
+                    isFetchSuccess = await TryFetchFloatingStockRateData(floatingStockUrl, parameters, floatingDataResult);
+
+                    if (!isFetchSuccess)
                     {
-                        if (HttpStatusCode.OK == response.StatusCode)
-                        {
-                            string body = await response.Content.ReadAsStringAsync();
-                            using (var doc = JsonDocument.Parse(body))
-                            {
-                                JsonElement floatingData = doc.RootElement.GetProperty("list");
-                                floatingDataResult.Add(floatingData.Clone());
-                            }
-                        }
-                        else
-                        {
-                            _logger.Log($"Invalid response - floatingStockRateData: {response.ReasonPhrase}");
-                        }
+                        _logger.Log($"No floating data fetch for corp_code: {parameters["corp_code"]}");
                     }
-                }
-                catch (HttpRequestException ex)
-                {
-                    _logger.Log($"HttpRequestException - floatingStockRateData: {ex.Message}");
-                    return default;
-                }
-                catch (Exception ex)
-                {
-                    _logger.Log($"Exception - floatingStockRateData: {ex.Message}");
-                    return default;
                 }
             }
             /*
@@ -272,6 +262,94 @@ namespace TelegramBot.Services
              - hold_stock_rate: 보유 주식 비율
             */
             return floatingDataResult;
+        }
+
+        private async Task<bool> TryFetchFloatingStockRateData(string url, Dictionary<string, string> parameters, List<JsonElement> result)
+        {
+            var queryString = GetQueryString(parameters);
+            var requestUrl = $"{url}?{queryString}";
+
+            try
+            {
+                using (var response = await _httpClient.GetAsync(requestUrl))
+                {
+                    if (HttpStatusCode.OK == response.StatusCode)
+                    {
+                        string body = await response.Content.ReadAsStringAsync();
+                        using (var doc = JsonDocument.Parse(body))
+                        {
+                            if (doc.RootElement.TryGetProperty("list", out JsonElement floatingData) && floatingData.GetArrayLength() > 0);
+                            {
+                                result.Add(floatingData.Clone());
+                                return true;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        _logger.Log($"Invalid response - floatingStockRateData: {response.ReasonPhrase}");
+                    }
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.Log($"HttpRequestException - floatingStockRateData: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                _logger.Log($"Exception - floatingStockRateData: {ex.Message}");
+            }
+            return false;
+        }
+
+        // TODO: 장전 모든 회사들에 대한 최신 보고서 종류 및 년도 업데이트 필요
+        // 정기 보고서의 종류를 결정하기 위한 함수
+        private List<BusinessReportType> GetLatestReportCode(int settlementMonth = 12)
+        {
+            int reportTypeNumer = Enum.GetValues(typeof(BusinessReportType)).Length;
+            const int TotalMonth = 12;
+            const int baseSettlementMonth = 12;
+            var interval = TotalMonth / reportTypeNumer;
+            var today = DateTime.Today.Month;
+            List<BusinessReportType> reportCodeList = new();
+            if (settlementMonth == baseSettlementMonth)
+            {
+                if (today <= interval * 1) // 1분기
+                {
+                    reportCodeList.Add(BusinessReportType.FOURTH_QUARTER);
+                    reportCodeList.Add(BusinessReportType.THIRD_QUARTER);
+                }
+                else if (today <= interval * 2) // 2분기
+                {
+                    reportCodeList.Add(BusinessReportType.FIRST_QUARTER);
+                    reportCodeList.Add(BusinessReportType.FOURTH_QUARTER);
+                }
+                else if (today <= interval * 3) // 3분기
+                {
+                    reportCodeList.Add(BusinessReportType.SECOND_QUARTER);
+                    reportCodeList.Add(BusinessReportType.FIRST_QUARTER);
+                }
+                else // 4분기
+                {
+                    reportCodeList.Add(BusinessReportType.THIRD_QUARTER);
+                    reportCodeList.Add(BusinessReportType.SECOND_QUARTER);
+                }
+            }
+            else
+            {
+                // TODO: 결산월이 12월이 아닌 경우에 대한 예외처리
+            }
+            return reportCodeList;
+        }
+
+        private string GetLatestReportBusinessYear(BusinessReportType reportCode)
+        {
+            var year = DateTime.Now.Year;
+            if (reportCode == BusinessReportType.FOURTH_QUARTER)
+            {
+                return (year - 1).ToString();
+            }
+            return year.ToString();
         }
 
         private string GetQueryString(Dictionary<string, string> parameters)
