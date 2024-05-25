@@ -22,9 +22,9 @@ namespace TelegramBot.Services
         readonly ILogger _logger;
         //private string FILE_PATH = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "../../../../TelegramBot/Data/"));
 
-        private List<JsonElement> _overviewData = new();
+        private List<JsonElement> _majorInfoData = new();
         private List<JsonElement> _detailData = new();
-        private List<JsonElement> _floatingStockRate = new();
+        private List<JsonElement> _minorityShareholderData = new();
 
         public TreasuryStockService(ILogger logger)
         {
@@ -40,19 +40,19 @@ namespace TelegramBot.Services
 
         public async Task GetData()
         {
-            _overviewData = await GetOverviewData();
-            _detailData = await GetDetailData(_overviewData);
-            _floatingStockRate = await GetFloatingStockRateData(_overviewData);
+            _majorInfoData = await GetMajorInfoData();
+            _detailData = await GetTreasuryDetailData(_majorInfoData);
+            _minorityShareholderData = await GetMinorityShareholderStatusData(_majorInfoData);
         }
 
-        async Task<List<JsonElement>> GetOverviewData()
+        async Task<List<JsonElement>> GetMajorInfoData()
         {
             var _pageNumber = 1; // 페이지 번호
             var _pageCount = 2; // 페이지 별 건수
             var startDate = "20240510"; // TEST
             var endDate = GetTodayDate();
             var majorInfoReport = "B001";
-            var majorInfoReportUrl = "http://opendart.fss.or.kr/api/list.json";
+            var baseUrl = "http://opendart.fss.or.kr/api/list.json";
             var parameters = new Dictionary<string, string>
             {
                 ["crtfc_key"] = PrivateData.DART_API_KEY,
@@ -62,7 +62,7 @@ namespace TelegramBot.Services
                 ["pblntf_detail_ty"] = majorInfoReport,
             };
 
-            var overviewResult = new List<JsonElement>();
+            var majorInfoResult = new List<JsonElement>();
 
             while (true)
             {
@@ -70,7 +70,7 @@ namespace TelegramBot.Services
                 {
                     parameters["page_no"] = _pageNumber.ToString();
                     var queryString = GetQueryString(parameters);
-                    var url = $"{majorInfoReportUrl}?{queryString}";
+                    var url = $"{baseUrl}?{queryString}";
                     // HttpClientMessage에 dispose()가 있으므로 resouce release를 위해 using 사용
                     using (var response = await _httpClient.GetAsync(url))
                     {
@@ -80,11 +80,11 @@ namespace TelegramBot.Services
                             using (var doc = JsonDocument.Parse(body))
                             {
                                 JsonElement overviewData = doc.RootElement.GetProperty("list");
-                                var filteredOverviewData = FilterOverviewData(overviewData);
+                                var filteredOverviewData = FilterMajorInfoData(overviewData);
 
                                 foreach (var overviewObj in filteredOverviewData)
                                 {
-                                    overviewResult.Add(overviewObj.Clone()); // using 밖에서 dispose 되기 때문에 clone() 필요
+                                    majorInfoResult.Add(overviewObj.Clone()); // using 밖에서 dispose 되기 때문에 clone() 필요
                                 }
 
                                 var totalPage = doc.RootElement.GetProperty("total_page").GetInt32();
@@ -113,10 +113,10 @@ namespace TelegramBot.Services
             }
             
             // TODO: cache check logic
-            return overviewResult;
+            return majorInfoResult;
         }
 
-        private List<JsonElement> FilterOverviewData(JsonElement OverviewArray)
+        private List<JsonElement> FilterMajorInfoData(JsonElement OverviewArray)
         {
             var keyword = "주요사항보고서(자기주식취득결정)"; // TODO: 처분, 신탁도 케이스 대응하기
             var KOSPI = "Y";
@@ -143,9 +143,9 @@ namespace TelegramBot.Services
         //    await File.WriteAllTextAsync(Path.Combine(FILE_PATH, "list.json"), finalJson);
         //}
 
-        private async Task<List<JsonElement>> GetDetailData(List<JsonElement> overviewData)
+        private async Task<List<JsonElement>> GetTreasuryDetailData(List<JsonElement> overviewData)
         {
-            if (_overviewData.Count == 0)
+            if (_majorInfoData.Count == 0)
             {
                 _logger.Log("자기주식 관련 overview 데이터가 존재하지 않습니다.");
                 return default;
@@ -163,7 +163,7 @@ namespace TelegramBot.Services
                     continue;
                 companyList.Add(corpCode);
 
-                var treasuryStockUrl = "https://opendart.fss.or.kr/api/tsstkAqDecsn.json";
+                var baseUrl = "https://opendart.fss.or.kr/api/tsstkAqDecsn.json";
                 var parameters = new Dictionary<string, string>
                 {
                     ["crtfc_key"] = PrivateData.DART_API_KEY,
@@ -173,7 +173,7 @@ namespace TelegramBot.Services
                 };
 
                 var queryString = GetQueryString(parameters);
-                var url = $"{treasuryStockUrl}?{queryString}";
+                var url = $"{baseUrl}?{queryString}";
 
                 try
                 {
@@ -223,13 +223,13 @@ namespace TelegramBot.Services
                 return today.ToString(dateForm);
         }
 
-        private async Task<List<JsonElement>> GetFloatingStockRateData(List<JsonElement> overviewData)
+        private async Task<List<JsonElement>> GetMinorityShareholderStatusData(List<JsonElement> overviewData)
         {
             List<JsonElement> floatingDataResult = new();
             List<BusinessReportType> latestReportCodeList = GetLatestReportCode();
             foreach (var overviewJson in overviewData)
             {
-                var floatingStockUrl = "https://opendart.fss.or.kr/api/mrhlSttus.json";
+                var baseUrl = "https://opendart.fss.or.kr/api/mrhlSttus.json";
                 var parameters = new Dictionary<string, string>
                 {
                     ["crtfc_key"] = PrivateData.DART_API_KEY,
@@ -238,14 +238,14 @@ namespace TelegramBot.Services
                     ["reprt_code"] = ((int)latestReportCodeList[0]).ToString(), // 보고서 코드
                 };
 
-                bool isFetchSuccess = await TryFetchFloatingStockRateData(floatingStockUrl, parameters, floatingDataResult);
+                bool isFetchSuccess = await TryFetchMinorityShareholderData(baseUrl, parameters, floatingDataResult);
 
                 if (!isFetchSuccess)
                 {
                     parameters["bsns_year"] = GetLatestReportBusinessYear(latestReportCodeList[1]);
                     parameters["reprt_code"] = ((int)latestReportCodeList[1]).ToString();
 
-                    isFetchSuccess = await TryFetchFloatingStockRateData(floatingStockUrl, parameters, floatingDataResult);
+                    isFetchSuccess = await TryFetchMinorityShareholderData(baseUrl, parameters, floatingDataResult);
 
                     if (!isFetchSuccess)
                     {
@@ -264,7 +264,7 @@ namespace TelegramBot.Services
             return floatingDataResult;
         }
 
-        private async Task<bool> TryFetchFloatingStockRateData(string url, Dictionary<string, string> parameters, List<JsonElement> result)
+        private async Task<bool> TryFetchMinorityShareholderData(string url, Dictionary<string, string> parameters, List<JsonElement> result)
         {
             var queryString = GetQueryString(parameters);
             var requestUrl = $"{url}?{queryString}";
@@ -278,9 +278,9 @@ namespace TelegramBot.Services
                         string body = await response.Content.ReadAsStringAsync();
                         using (var doc = JsonDocument.Parse(body))
                         {
-                            if (doc.RootElement.TryGetProperty("list", out JsonElement floatingData) && floatingData.GetArrayLength() > 0);
+                            if (doc.RootElement.TryGetProperty("list", out JsonElement minorityShareholderData) && minorityShareholderData.GetArrayLength() > 0);
                             {
-                                result.Add(floatingData.Clone());
+                                result.Add(minorityShareholderData.Clone());
                                 return true;
                             }
                         }
