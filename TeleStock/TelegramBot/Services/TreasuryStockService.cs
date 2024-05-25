@@ -17,6 +17,7 @@ namespace TelegramBot.Services
 
         private List<JsonElement> _overviewData = new();
         private List<JsonElement> _detailData = new();
+        private List<JsonElement> _floatingStockRate = new();
 
         public TreasuryStockService(ILogger logger)
         {
@@ -34,6 +35,7 @@ namespace TelegramBot.Services
         {
             _overviewData = await GetOverviewData();
             _detailData = await GetDetailData(_overviewData);
+            _floatingStockRate = await GetFloatingStockRateData(_overviewData);
         }
 
         async Task<List<JsonElement>> GetOverviewData()
@@ -60,7 +62,7 @@ namespace TelegramBot.Services
                 try
                 {
                     parameters["page_no"] = _pageNumber.ToString();
-                    var queryString = string.Join("&", parameters.Select(keyValue => $"{Uri.EscapeDataString(keyValue.Key)}={Uri.EscapeDataString(keyValue.Value)}"));
+                    var queryString = GetQueryString(parameters);
                     var url = $"{majorInfoReportUrl}?{queryString}";
                     // HttpClientMessage에 dispose()가 있으므로 resouce release를 위해 using 사용
                     using (var response = await _httpClient.GetAsync(url))
@@ -86,14 +88,14 @@ namespace TelegramBot.Services
                         }
                         else
                         {
-                            _logger.Log($"reason: {response.ReasonPhrase}");
+                            _logger.Log($"Invalid response  - OverviewData : {response.ReasonPhrase}");
                             return default;
                         }
                     }
                 }
                 catch (HttpRequestException ex)
                 {
-                    _logger.Log($"HttpRequestException OverviewData: {ex.Message}");
+                    _logger.Log($"HttpRequestException - OverviewData: {ex.Message}");
                     return default;
                 }
                 catch (Exception ex)
@@ -163,12 +165,12 @@ namespace TelegramBot.Services
                     ["end_de"] = receptData,
                 };
 
-                var queryString = string.Join("&", parameters.Select(KeyValue => $"{Uri.EscapeDataString(KeyValue.Key)}={Uri.EscapeDataString(KeyValue.Value)}"));
+                var queryString = GetQueryString(parameters);
                 var url = $"{treasuryStockUrl}?{queryString}";
 
                 try
                 {
-                    using ( var response = await _httpClient.GetAsync(url) )
+                    using (var response = await _httpClient.GetAsync(url))
                     {
                         if (HttpStatusCode.OK == response.StatusCode)
                         {
@@ -179,6 +181,11 @@ namespace TelegramBot.Services
                                 JsonElement detailData = doc.RootElement.GetProperty("list");
                                 detailResult.Add(detailData.Clone());
                             }
+                        }
+                        else
+                        {
+                            _logger.Log($"Invalid response - detailData: {response.ReasonPhrase}");
+                            return default;
                         }
                     }
                 }
@@ -197,7 +204,7 @@ namespace TelegramBot.Services
             return detailResult;
         }
 
-        private string GetTodayDate()
+        private static string GetTodayDate()
         {
             var dateForm = "yyyyMMdd";
             var today = DateTime.Now; // ex. 2024-05-18 오후 8:11:16
@@ -207,6 +214,69 @@ namespace TelegramBot.Services
                 return today.AddDays(-1).ToString(dateForm);
             else
                 return today.ToString(dateForm);
+        }
+
+        private async Task<List<JsonElement>> GetFloatingStockRateData(List<JsonElement> overviewData)
+        {
+            List<JsonElement> floatingDataResult = new();
+            // 이걸로 되나???? 한번에 overviewData에 여러개 들어있을 수 있는지 확인 
+            foreach (var overviewJson in overviewData)
+            {
+                var floatingStockUrl = "https://opendart.fss.or.kr/api/mrhlSttus.json";
+                var parameters = new Dictionary<string, string>
+                {
+                    ["crtfc_key"] = PrivateData.DART_API_KEY,
+                    ["corp_code"] = overviewJson.GetProperty("corp_code").ToString(),
+                    ["bsns_year"] = "2023", // 사업 년도
+                    ["reprt_code"] = "11011", // 보고서 코드
+                };
+                var queryString = GetQueryString(parameters);
+                var url = $"{floatingStockUrl}?{queryString}";
+
+                try
+                {
+                    using (var response = await _httpClient.GetAsync(url))
+                    {
+                        if (HttpStatusCode.OK == response.StatusCode)
+                        {
+                            string body = await response.Content.ReadAsStringAsync();
+                            using (var doc = JsonDocument.Parse(body))
+                            {
+                                JsonElement floatingData = doc.RootElement.GetProperty("list");
+                                floatingDataResult.Add(floatingData.Clone());
+                            }
+                        }
+                        else
+                        {
+                            _logger.Log($"Invalid response - floatingStockRateData: {response.ReasonPhrase}");
+                        }
+                    }
+                }
+                catch (HttpRequestException ex)
+                {
+                    _logger.Log($"HttpRequestException - floatingStockRateData: {ex.Message}");
+                    return default;
+                }
+                catch (Exception ex)
+                {
+                    _logger.Log($"Exception - floatingStockRateData: {ex.Message}");
+                    return default;
+                }
+            }
+            /*
+             - corp_code: 고유번호
+             - corp_name: 법인명
+             - se: 구분 (ex. 소액주주)
+             - hold_stock_co: 보유 주식 수
+             - stock_tot_co: 총발행 주식수
+             - hold_stock_rate: 보유 주식 비율
+            */
+            return floatingDataResult;
+        }
+
+        private string GetQueryString(Dictionary<string, string> parameters)
+        {
+            return string.Join("&", parameters.Select(KeyValue => $"{Uri.EscapeDataString(KeyValue.Key)}={Uri.EscapeDataString(KeyValue.Value)}"));
         }
 
         public List<string> GetMessages()
