@@ -1,0 +1,153 @@
+
+//ValueKind = Object : "{"corp_code":"00389110","corp_name":"지어소프트","stock_code":"051160","corp_cls":"K","report_nm":"주요사항보고서(자기주식취득결정)","rcept_no":"20240510000470","flr_nm":"지어소프트","rcept_dt":"20240510","rm":""}"
+//ValueKind = Object : "{"corp_code":"00415327","corp_name":"중앙백신","stock_code":"072020","corp_cls":"K","report_nm":"주요사항보고서(자기주식취득결정)","rcept_no":"20240510000419","flr_nm":"중앙백신","rcept_dt":"20240510","rm":""}"
+
+//ValueKind = Array : "[{"rcept_no":"20240510000470","corp_cls":"K","corp_code":"00389110","corp_name":"지어소프트","od_a_at_t":"1","od_a_at_b":"-","adt_a_atn":"참석","aqpln_stk_ostk":"1,282,052","aqpln_stk_estk":"-","aqpln_prc_ostk":"10,000,005,600","aqpln_prc_estk":"-","aqexpd_bgd":"2024년 05월 13일","aqexpd_edd":"2024년 08월 09일","hdexpd_bgd":"-","hdexpd_edd":"-","aq_pp":"주가안정 도모 및 주주가치 제고","aq_mth":"코스닥시장을 통한 장내 직접 취득","cs_iv_bk":"한국투자증권\n(Korea Investment & Securities Co, Ltd.)","aq_wtn_div_ostk":"-","aq_wtn_div_ostk_rt":"-","aq_wtn_div_estk":"-","aq_wtn_div_estk_rt":"-","eaq_ostk":"-","eaq_ostk_rt":"-","eaq_estk":"-","eaq_estk_rt":"-","aq_dd":"2024년 05월 10일","d1_prodlm_ostk":"128,205","d1_prodlm_estk":"-"}]"
+//ValueKind = Array : "[{"rcept_no":"20240510000419","corp_cls":"K","corp_code":"00415327","corp_name":"중앙백신","od_a_at_t":"1","od_a_at_b":"1","adt_a_atn":"참석","aqpln_stk_ostk":"100,000","aqpln_stk_estk":"-","aqpln_prc_ostk":"1,091,000,000","aqpln_prc_estk":"-","aqexpd_bgd":"2024년 05월 13일","aqexpd_edd":"2024년 08월 09일","hdexpd_bgd":"-","hdexpd_edd":"-","aq_pp":"주가 안정을 통한 주주가치 제고","aq_mth":"코스닥시장을 통한 장내 직접취득","cs_iv_bk":"하나증권 주식회사\n\nHana Securities Co.,Ltd.","aq_wtn_div_ostk":"-","aq_wtn_div_ostk_rt":"-","aq_wtn_div_estk":"-","aq_wtn_div_estk_rt":"-","eaq_ostk":"-","eaq_ostk_rt":"-","eaq_estk":"-","eaq_estk_rt":"-","aq_dd":"2024년 05월 10일","d1_prodlm_ostk":"10,000","d1_prodlm_estk":"-"}]"
+
+//ValueKind = Array : "[{"rcept_no":"20240514000341","corp_cls":"K","corp_code":"00389110","corp_name":"지어소프트","se":"소액주주","shrholdr_co":"-","shrholdr_tot_co":"-","shrholdr_rate":"-","hold_stock_co":"-","stock_tot_co":"-","hold_stock_rate":"-"}]"
+//ValueKind = Array : "[{"rcept_no":"20240514000791","corp_cls":"K","corp_code":"00415327","corp_name":"중앙백신","se":"소액주주","shrholdr_co":"-","shrholdr_tot_co":"-","shrholdr_rate":"-","hold_stock_co":"-","stock_tot_co":"-","hold_stock_rate":"-"}]"
+
+{
+  "rcept_no": "20240514000341",
+  "corp_cls": "K",
+  "corp_code": "00389110",
+  "corp_name": "지어소프트",
+  "se": "소액주주",
+  "shrholdr_co": "-",
+  "shrholdr_tot_co": "-",
+  "shrholdr_rate": "-",
+  "hold_stock_co": "-",
+  "stock_tot_co": "-",
+  "hold_stock_rate": "-"
+} {
+  "corp_cls": "K",
+  "corp_code": "00389110",
+  "corp_name": "지어소프트",
+  "flr_nm": "지어소프트",
+  "rcept_dt": "20240510",
+  "rcept_no": "20240510000470",
+  "report_nm": "주요사항보고서(자기주식취득결정)",
+  "rm": "",
+  "stock_code": "051160"
+} {
+  "corp_code": "00415327",
+  "corp_name": "중앙백신",
+  "stock_code": "072020",
+  "corp_cls": "K",
+  "report_nm": "주요사항보고서(자기주식취득결정)",
+  "rcept_no": "20240510000419",
+  "flr_nm": "중앙백신",
+  "rcept_dt": "20240510",
+  "rm": ""
+} [
+  {
+    "adt_a_atn": "참석",
+    "aq_dd": "2024년 05월 10일",
+    "aq_mth": "코스닥시장을 통한 장내 직접 취득",
+    "aq_pp": "주가안정 도모 및 주주가치 제고",
+    "aq_wtn_div_estk": "-",
+    "aq_wtn_div_estk_rt": "-",
+    "aq_wtn_div_ostk": "-",
+    "aq_wtn_div_ostk_rt": "-",
+    "aqexpd_bgd": "2024년 05월 13일",
+    "aqexpd_edd": "2024년 08월 09일",
+    "aqpln_prc_estk": "-",
+    "aqpln_prc_ostk": "10,000,005,600",
+    "aqpln_stk_estk": "-",
+    "aqpln_stk_ostk": "1,282,052",
+    "corp_cls": "K",
+    "corp_code": "00389110",
+    "corp_name": "지어소프트",
+    "cs_iv_bk": "한국투자증권\n(Korea Investment & Securities Co, Ltd.)",
+    "d1_prodlm_estk": "-",
+    "d1_prodlm_ostk": "128,205",
+    "eaq_estk": "-",
+    "eaq_estk_rt": "-",
+    "eaq_ostk": "-",
+    "eaq_ostk_rt": "-",
+    "hdexpd_bgd": "-",
+    "hdexpd_edd": "-",
+    "od_a_at_b": "-",
+    "od_a_at_t": "1",
+    "rcept_no": "20240510000470"
+  }
+] [
+  {
+    "rcept_no": "20240510000419",
+    "corp_cls": "K",
+    "corp_code": "00415327",
+    "corp_name": "중앙백신",
+    "od_a_at_t": "1",
+    "od_a_at_b": "1",
+    "adt_a_atn": "참석",
+    "aqpln_stk_ostk": "100,000",
+    "aqpln_stk_estk": "-",
+    "aqpln_prc_ostk": "1,091,000,000",
+    "aqpln_prc_estk": "-",
+    "aqexpd_bgd": "2024년 05월 13일",
+    "aqexpd_edd": "2024년 08월 09일",
+    "hdexpd_bgd": "-",
+    "hdexpd_edd": "-",
+    "aq_pp": "주가 안정을 통한 주주가치 제고",
+    "aq_mth": "코스닥시장을 통한 장내 직접취득",
+    "cs_iv_bk": "하나증권 주식회사\n\nHana Securities Co.,Ltd.",
+    "aq_wtn_div_ostk": "-",
+    "aq_wtn_div_ostk_rt": "-",
+    "aq_wtn_div_estk": "-",
+    "aq_wtn_div_estk_rt": "-",
+    "eaq_ostk": "-",
+    "eaq_ostk_rt": "-",
+    "eaq_estk": "-",
+    "eaq_estk_rt": "-",
+    "aq_dd": "2024년 05월 10일",
+    "d1_prodlm_ostk": "10,000",
+    "d1_prodlm_estk": "-"
+  }
+] [
+  {
+    "corp_cls": "K",
+    "corp_code": "00389110",
+    "corp_name": "지어소프트",
+    "hold_stock_co": "-",
+    "hold_stock_rate": "-",
+    "rcept_no": "20240514000341",
+    "se": "소액주주",
+    "shrholdr_co": "-",
+    "shrholdr_rate": "-",
+    "shrholdr_tot_co": "-",
+    "stock_tot_co": "-"
+  }
+] [
+  {
+    "rcept_no": "20240514000791",
+    "corp_cls": "K",
+    "corp_code": "00415327",
+    "corp_name": "중앙백신",
+    "se": "소액주주",
+    "shrholdr_co": "-",
+    "shrholdr_tot_co": "-",
+    "shrholdr_rate": "-",
+    "hold_stock_co": "-",
+    "stock_tot_co": "-",
+    "hold_stock_rate": "-"
+  }
+]
+
+
+// 예외
+[
+  {
+    "rcept_no": "20240321001260",
+    "corp_cls": "K",
+    "corp_code": "00389110",
+    "corp_name": "지어소프트",
+    "se": "소액주주",
+    "shrholdr_co": "22,232",
+    "shrholdr_tot_co": "22,241",
+    "shrholdr_rate": "99.96%",
+    "hold_stock_co": "10,153,158",
+    "stock_tot_co": "15,474,430",
+    "hold_stock_rate": "65.61%"
+  }
+]

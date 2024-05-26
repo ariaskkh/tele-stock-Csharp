@@ -16,7 +16,7 @@ namespace TelegramBot
 
         public async Task Start()
         {
-            await _treasuryStockService.GetData();
+            await _treasuryStockService.UpdateDataAsync();
             //SendMessage();
         }
 
