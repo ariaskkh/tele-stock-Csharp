@@ -2,15 +2,19 @@
 {
     public class TreasuryStock
     {
-        public string CorpName { get; set; }
-        public string StockCode { get; set; }
-        public string ReportName { get; set; }
-        public string AcquisitionMethod { get; set; }
-        public string AcquisitionPurpose { get; set; }
-        public string AcquisitionStartDate { get; set; }
-        public string AcquisitionEndDate { get; set; }
-        public string AcquisitionRateOfFloatingStock { get; set; }
-        public string ReceiptNumber { get; set; }
+        public string ReceiptNumber { get; init; }
+        public string CorpName { get; init; }
+        public string StockCode { get; init; }
+        public string ReportName { get; init; }
+        public string AcquisitionMethod { get; init; }
+        public string AcquisitionPurpose { get; init; }
+        public string ExpectedAcquisitionStartDate { get; init; }
+        public string ExpectedAcquisitionEndDate { get; init; }
+        public string PlannedAcquisitionPriceOfOrdinaryStock { get; init; }
+        public string PlannedAcquisitionPriceOfExtraordinaryStock { get; init; }
+        public bool IsOrdinaryStock { get; init; }
+        public string ExpectedAcquisitionMoney { get; init; }
+        public string AcquisitionRateOfFloatingStock { get; init; }
 
     }
 }
