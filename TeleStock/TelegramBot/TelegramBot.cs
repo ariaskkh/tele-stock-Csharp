@@ -8,25 +8,28 @@ namespace TelegramBot
     {
         TelegramBotClient? _botClient;
         TreasuryStockService _treasuryStockService;
+        ILogger _logger;
         public TelegramBot(ILogger logger)
         {
             _botClient = new TelegramBotClient(PrivateData.ACCESS_TOKEN);
             _treasuryStockService = new TreasuryStockService(logger);
+            _logger = logger
         }
 
         public async Task Start()
         {
             await _treasuryStockService.UpdateDataAsync();
-            //SendMessage();
+            await SendMessages();
         }
 
-        private async Task SendMessage()
+        private async Task SendMessages()
         {
-            var messages = _treasuryStockService.GetMessages();
-            foreach (var message in messages)
+            var messageList = _treasuryStockService.GetMessages();
+            foreach (var message in messageList)
             {
                 await _botClient.SendTextMessageAsync(PrivateData.CHAT_ID, message);
             }
+            _logger.Log("send Messages completed!");
         }
     }
 }
