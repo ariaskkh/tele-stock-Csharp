@@ -136,24 +136,17 @@ namespace TelegramBot.Services
             return majorInfoReportList;
         }
 
-        private List<MajorInfoReport> FilterMajorInfoReport(List<MajorInfoReport> majorInfoReportList) // overview 데이터 한 개 받아서 bool return하는 함수. 이건 구림
+        private List<MajorInfoReport> FilterMajorInfoReport(List<MajorInfoReport> majorInfoReportList)
         {
-            var keyword = "주요사항보고서(자기주식취득결정)"; // TODO: 처분, 신탁도 케이스 대응하기
-            var KOSPI = CorpClassType.Y;
-            var KOSDAQ = CorpClassType.K;
-            List<MajorInfoReport> filteredMajorInfoReportList = new();
+            return majorInfoReportList.Where(majorInfo => IsTreasuryStockReport(majorInfo)).ToList();
 
-            foreach (var majorInfoReport in majorInfoReportList) // 순서 필요 없는데 foreach에서 냄새가 난다.
+            bool IsTreasuryStockReport(MajorInfoReport majorInfo)
             {
-                string? reportName = majorInfoReport.ReportName;
-                CorpClassType? corpClass = majorInfoReport.CorpClass;
-
-                if (reportName == keyword && (corpClass == KOSPI || corpClass == KOSDAQ))
-                {
-                    filteredMajorInfoReportList.Add(majorInfoReport);
-                }
+                var keyword = "주요사항보고서(자기주식취득결정)"; // TODO: 처분, 신탁도 케이스 대응하기
+                var KOSPI = CorpClassType.Y;
+                var KOSDAQ = CorpClassType.K;
+                return (majorInfo.ReportName == keyword) && (majorInfo.CorpClass == KOSPI || majorInfo.CorpClass == KOSDAQ);
             }
-            return filteredMajorInfoReportList;
         }
 
         // TODO: caching
