@@ -40,13 +40,21 @@ namespace TelegramBot.Services
         public async Task UpdateDataAsync()
         {
             _majorInfoReportList = await GetMajorInfoReportList();
-            _detailReportList = await GetTreasuryDetailReportAsync(_majorInfoReportList);
-            _minorityShareholderDataList = await GetMinorityShareholderStatusDataAsync(_detailReportList);
+            _detailReportList = await GetTreasuryDetailReport(_majorInfoReportList);
+            _minorityShareholderDataList = await GetMinorityShareholderStatusData(_detailReportList);
             _treasuryStockDict = MergeData(_majorInfoReportList, _detailReportList, _minorityShareholderDataList);
         }
 
         async Task<List<MajorInfoReport>> GetMajorInfoReportList()
+        {   
+            List<MajorInfoReport> majorInfoReportList = await GetMajorInfoReportListAsync();
+            // TODO: cache check logic
+            return FilterMajorInfoReport(majorInfoReportList);
+        }
+
+        private async Task<List<MajorInfoReport>?> GetMajorInfoReportListAsync()
         {
+            var _pageNumber = 0; // 페이지 번호
             var _pageCount = 100; // 페이지 별 건수
             var startDate = "20240529"; // TEST
             var endDate = GetTodayDate();
@@ -60,61 +68,23 @@ namespace TelegramBot.Services
                 ["end_de"] = endDate,
                 ["pblntf_detail_ty"] = majorInfoReportNumber,
             };
-            
-            List<MajorInfoReport> majorInfoReportList = await TryFetchMajorInfoReportAsync(baseUrl, parameters);
-
-            // TODO: cache check logic
-            return FilterMajorInfoReport(majorInfoReportList);
-        }
-
-        private async Task<List<MajorInfoReport>?> TryFetchMajorInfoReportAsync(string baseUrl, Dictionary<string, string> parameters)
-        {
             var majorInfoReportList = new List<MajorInfoReport>();
-            var _pageNumber = 1; // 페이지 번호
-            while (true)
+            bool stopLoop = false;
+            while (!stopLoop)
             {
-                parameters["page_no"] = _pageNumber.ToString();
+                parameters["page_no"] = (++_pageNumber).ToString();
                 try
                 {
-                    using (var response = await _httpClient.GetAsync(baseUrl.GetUrlWithQuery(parameters)))
+                    var result = await FetchMajorInfoReportAsync(baseUrl.GetUrlWithQuery(parameters), _pageNumber);
+                    if (result.majorInfoReportList != null)
                     {
-                        if (HttpStatusCode.OK == response.StatusCode)
-                        {
-                            string body = await response.Content.ReadAsStringAsync();
-                            using (var doc = JsonDocument.Parse(body))
-                            {
-                                JsonElement majorInfoJson = doc.RootElement.GetProperty("list");
-                                foreach (var majorInfo in majorInfoJson.EnumerateArray())
-                                {
-                                    var corpClassString = majorInfo.GetProperty("corp_cls").ToString();
-                                    var corpClass = (CorpClassType)Enum.Parse(typeof(CorpClassType), corpClassString);
-
-                                    var majorInforReport = new MajorInfoReport()
-                                    {
-                                        ReceiptNumber = majorInfo.GetProperty("rcept_no").ToString(),
-                                        ReceiptDate = majorInfo.GetProperty("rcept_dt").ToString(),
-                                        CorpClass = corpClass,
-                                        CorpCode = majorInfo.GetProperty("corp_code").ToString(),
-                                        CorpName = majorInfo.GetProperty("corp_name").ToString(),
-                                        ReportName = majorInfo.GetProperty("report_nm").ToString(),
-                                        StockCode = majorInfo.GetProperty("stock_code").ToString(),
-                                        Remarks = majorInfo.GetProperty("rm").ToString(),
-                                    };
-                                    majorInfoReportList.Add(majorInforReport);
-                                }
-
-                                var totalPage = doc.RootElement.GetProperty("total_page").GetInt32();
-                                if (_pageNumber == totalPage)
-                                    break;
-                                _pageNumber++;
-                            }
-                        }
-                        else
-                        {
-                            _logger.Log($"Invalid response  - OverviewData : {response.ReasonPhrase}");
-                            return default;
-                        }
+                        majorInfoReportList.AddRange(result.majorInfoReportList);
                     }
+                    if (result.stopLoop)
+                    {
+                        stopLoop = true;
+                    }
+                    
                 }
                 catch (HttpRequestException ex)
                 {
@@ -128,6 +98,51 @@ namespace TelegramBot.Services
                 }
             }
             return majorInfoReportList;
+        }
+
+        private async Task<(List<MajorInfoReport> majorInfoReportList, bool stopLoop)> FetchMajorInfoReportAsync(string url, int _pageNumber)
+        {
+            List<MajorInfoReport> majorInfoReportList = new();
+            bool stopLoop = false;
+            using (var response = await _httpClient.GetAsync(url))
+            {
+                if (HttpStatusCode.OK == response.StatusCode)
+                {
+                    string body = await response.Content.ReadAsStringAsync();
+                    using (var doc = JsonDocument.Parse(body))
+                    {
+                        JsonElement majorInfoJson = doc.RootElement.GetProperty("list");
+                        foreach (var majorInfo in majorInfoJson.EnumerateArray())
+                        {
+                            var corpClassString = majorInfo.GetProperty("corp_cls").ToString();
+                            var corpClass = (CorpClassType)Enum.Parse(typeof(CorpClassType), corpClassString);
+
+                            var majorInforReport = new MajorInfoReport()
+                            {
+                                ReceiptNumber = majorInfo.GetProperty("rcept_no").ToString(),
+                                ReceiptDate = majorInfo.GetProperty("rcept_dt").ToString(),
+                                CorpClass = corpClass,
+                                CorpCode = majorInfo.GetProperty("corp_code").ToString(),
+                                CorpName = majorInfo.GetProperty("corp_name").ToString(),
+                                ReportName = majorInfo.GetProperty("report_nm").ToString(),
+                                StockCode = majorInfo.GetProperty("stock_code").ToString(),
+                                Remarks = majorInfo.GetProperty("rm").ToString(),
+                            };
+                            majorInfoReportList.Add(majorInforReport);
+                        }
+
+                        var totalPage = doc.RootElement.GetProperty("total_page").GetInt32();
+                        if (_pageNumber == totalPage)
+                            stopLoop = true;
+                    }
+                    return (majorInfoReportList, stopLoop);
+                }
+                else
+                {
+                    _logger.Log($"Invalid response  - OverviewData : {response.ReasonPhrase}");
+                    return (default, stopLoop);
+                }
+            }
         }
 
         private List<MajorInfoReport> FilterMajorInfoReport(List<MajorInfoReport> majorInfoReportList)
@@ -150,7 +165,7 @@ namespace TelegramBot.Services
         //    await File.WriteAllTextAsync(Path.Combine(FILE_PATH, "list.json"), finalJson);
         //}
 
-        private async Task<List<TreasuryDetailReport>> GetTreasuryDetailReportAsync(List<MajorInfoReport> MajorInfoReportList)
+        private async Task<List<TreasuryDetailReport>> GetTreasuryDetailReport(List<MajorInfoReport> MajorInfoReportList)
         {
             if (_majorInfoReportList is not null && _majorInfoReportList.Count == 0)
             {
@@ -180,62 +195,10 @@ namespace TelegramBot.Services
                 };
                 try
                 {
-                    using (var response = await _httpClient.GetAsync(baseUrl.GetUrlWithQuery(parameters)))
+                    var result  = await FetchTreasuryDetailReportAsync(baseUrl.GetUrlWithQuery(parameters));
+                    if (result != null)
                     {
-                        if (HttpStatusCode.OK == response.StatusCode)
-                        {
-                            string body = await response.Content.ReadAsStringAsync();
-                            using (var doc = JsonDocument.Parse(body))
-                            {
-                                // RootElement가 뭔지 확인해보기
-                                if (doc.RootElement.TryGetProperty("list", out JsonElement detailReportsJson)
-                                    && detailReportsJson.GetArrayLength() > 0)
-                                {
-                                    JsonElement detailReporJson = detailReportsJson[0]; // 한 개만 존재
-                                    var corpClass = (CorpClassType)Enum.Parse(typeof(CorpClassType), detailReporJson.GetProperty("corp_cls").ToString());
-
-                                    var treasuryDetailReport = new TreasuryDetailReport()
-                                    {
-                                        ReceiptNumber = detailReporJson.GetProperty("rcept_no").ToString(),
-                                        AuditAttendance = detailReporJson.GetProperty("adt_a_atn").ToString(),
-                                        AcquisitionDate = detailReporJson.GetProperty("aq_dd").ToString(),
-                                        AcquisitionMethod = detailReporJson.GetProperty("aq_mth").ToString(),
-                                        AcquisitionPurpose = detailReporJson.GetProperty("aq_pp").ToString(),
-                                        AcquisitionWithinDevidendOrdinaryStock = detailReporJson.GetProperty("aq_wtn_div_ostk").ToString(),
-                                        AcquisitionWithinDevidendOrdinaryStockRate = detailReporJson.GetProperty("aq_wtn_div_ostk_rt").ToString(),
-                                        AcquisitionWithinDevidendExtraordinaryStock = detailReporJson.GetProperty("aq_wtn_div_estk").ToString(),
-                                        AcquisitionWithinDevidendExtraordinaryStockRate = detailReporJson.GetProperty("aq_wtn_div_estk_rt").ToString(),
-                                        ExpectedAcquisitionStartDate = detailReporJson.GetProperty("aqexpd_bgd").ToString(),
-                                        ExpectedAcquisitionEndDate = detailReporJson.GetProperty("aqexpd_edd").ToString(),
-                                        AcquisitionPriceOfOrdinaryStock = detailReporJson.GetProperty("aqpln_prc_ostk").ToString(),
-                                        AcquisitionPriceOfExtraordinaryStock = detailReporJson.GetProperty("aqpln_prc_estk").ToString(),
-                                        AcquisitionNumberOfOrdinaryStock = detailReporJson.GetProperty("aqpln_stk_ostk").ToString(),
-                                        AcquisitionNumberOfExtraordinaryStock = detailReporJson.GetProperty("aqpln_stk_estk").ToString(),
-                                        CorpClass = corpClass,
-                                        CorpCode = detailReporJson.GetProperty("corp_code").ToString(),
-                                        CorpName = detailReporJson.GetProperty("corp_name").ToString(),
-                                        ConsignmentInvenstmentBrokerage = detailReporJson.GetProperty("cs_iv_bk").ToString(),
-                                        PurchaseLimitPerDayOfOrdinaryStock = detailReporJson.GetProperty("d1_prodlm_ostk").ToString(),
-                                        PurchaseLimitPerDayOfExtraordinaryStock = detailReporJson.GetProperty("d1_prodlm_estk").ToString(),
-                                        ExtraAcquisitionOrdinaryStock = detailReporJson.GetProperty("eaq_ostk").ToString(),
-                                        ExtraAcquisitionOrdinaryStockRate = detailReporJson.GetProperty("eaq_ostk_rt").ToString(),
-                                        ExtraAcquisitionExtraordinaryStock = detailReporJson.GetProperty("eaq_estk").ToString(),
-                                        ExtraAcquisitionExtraordinaryStockRate = detailReporJson.GetProperty("eaq_estk_rt").ToString(),
-                                        ExpectedHoldingPeriodStartData = detailReporJson.GetProperty("hdexpd_bgd").ToString(),
-                                        ExpectedHoldingPeriodEndData = detailReporJson.GetProperty("hdexpd_edd").ToString(),
-                                        OutsideDirectorAttendenceCount = detailReporJson.GetProperty("od_a_at_t").ToString(),
-                                        OutsideDirectorAbsentCount = detailReporJson.GetProperty("od_a_at_b").ToString(),
-                                    };
-
-                                    detailReportList.Add(treasuryDetailReport);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            _logger.Log($"Invalid response - detailData: {response.ReasonPhrase}");
-                            return default;
-                        }
+                        detailReportList.AddRange(result);
                     }
                 }
                 catch (HttpRequestException ex)
@@ -253,6 +216,69 @@ namespace TelegramBot.Services
             return detailReportList;
         }
 
+        private async Task<List<TreasuryDetailReport>> FetchTreasuryDetailReportAsync(string url)
+        {
+            List<TreasuryDetailReport> detailReportList = new();
+            using (var response = await _httpClient.GetAsync(url))
+            {
+                if (HttpStatusCode.OK == response.StatusCode)
+                {
+                    string body = await response.Content.ReadAsStringAsync();
+                    using (var doc = JsonDocument.Parse(body))
+                    {
+                        // RootElement가 뭔지 확인해보기
+                        if (doc.RootElement.TryGetProperty("list", out JsonElement detailReportsJson)
+                            && detailReportsJson.GetArrayLength() > 0)
+                        {
+                            JsonElement detailReporJson = detailReportsJson[0]; // 한 개만 존재
+                            var corpClass = (CorpClassType)Enum.Parse(typeof(CorpClassType), detailReporJson.GetProperty("corp_cls").ToString());
+
+                            var treasuryDetailReport = new TreasuryDetailReport()
+                            {
+                                ReceiptNumber = detailReporJson.GetProperty("rcept_no").ToString(),
+                                AuditAttendance = detailReporJson.GetProperty("adt_a_atn").ToString(),
+                                AcquisitionDate = detailReporJson.GetProperty("aq_dd").ToString(),
+                                AcquisitionMethod = detailReporJson.GetProperty("aq_mth").ToString(),
+                                AcquisitionPurpose = detailReporJson.GetProperty("aq_pp").ToString(),
+                                AcquisitionWithinDevidendOrdinaryStock = detailReporJson.GetProperty("aq_wtn_div_ostk").ToString(),
+                                AcquisitionWithinDevidendOrdinaryStockRate = detailReporJson.GetProperty("aq_wtn_div_ostk_rt").ToString(),
+                                AcquisitionWithinDevidendExtraordinaryStock = detailReporJson.GetProperty("aq_wtn_div_estk").ToString(),
+                                AcquisitionWithinDevidendExtraordinaryStockRate = detailReporJson.GetProperty("aq_wtn_div_estk_rt").ToString(),
+                                ExpectedAcquisitionStartDate = detailReporJson.GetProperty("aqexpd_bgd").ToString(),
+                                ExpectedAcquisitionEndDate = detailReporJson.GetProperty("aqexpd_edd").ToString(),
+                                AcquisitionPriceOfOrdinaryStock = detailReporJson.GetProperty("aqpln_prc_ostk").ToString(),
+                                AcquisitionPriceOfExtraordinaryStock = detailReporJson.GetProperty("aqpln_prc_estk").ToString(),
+                                AcquisitionNumberOfOrdinaryStock = detailReporJson.GetProperty("aqpln_stk_ostk").ToString(),
+                                AcquisitionNumberOfExtraordinaryStock = detailReporJson.GetProperty("aqpln_stk_estk").ToString(),
+                                CorpClass = corpClass,
+                                CorpCode = detailReporJson.GetProperty("corp_code").ToString(),
+                                CorpName = detailReporJson.GetProperty("corp_name").ToString(),
+                                ConsignmentInvenstmentBrokerage = detailReporJson.GetProperty("cs_iv_bk").ToString(),
+                                PurchaseLimitPerDayOfOrdinaryStock = detailReporJson.GetProperty("d1_prodlm_ostk").ToString(),
+                                PurchaseLimitPerDayOfExtraordinaryStock = detailReporJson.GetProperty("d1_prodlm_estk").ToString(),
+                                ExtraAcquisitionOrdinaryStock = detailReporJson.GetProperty("eaq_ostk").ToString(),
+                                ExtraAcquisitionOrdinaryStockRate = detailReporJson.GetProperty("eaq_ostk_rt").ToString(),
+                                ExtraAcquisitionExtraordinaryStock = detailReporJson.GetProperty("eaq_estk").ToString(),
+                                ExtraAcquisitionExtraordinaryStockRate = detailReporJson.GetProperty("eaq_estk_rt").ToString(),
+                                ExpectedHoldingPeriodStartData = detailReporJson.GetProperty("hdexpd_bgd").ToString(),
+                                ExpectedHoldingPeriodEndData = detailReporJson.GetProperty("hdexpd_edd").ToString(),
+                                OutsideDirectorAttendenceCount = detailReporJson.GetProperty("od_a_at_t").ToString(),
+                                OutsideDirectorAbsentCount = detailReporJson.GetProperty("od_a_at_b").ToString(),
+                            };
+
+                            detailReportList.Add(treasuryDetailReport);
+                        }
+                    }
+                }
+                else
+                {
+                    _logger.Log($"Invalid response - detailData: {response.ReasonPhrase}");
+                    return default;
+                }
+            }
+            return detailReportList;
+        }
+
         private static string GetTodayDate()
         {
             var dateForm = "yyyyMMdd";
@@ -265,50 +291,54 @@ namespace TelegramBot.Services
                 return today.ToString(dateForm);
         }
 
-        private async Task<List<MinorityShareholderStatusReport>> GetMinorityShareholderStatusDataAsync(List<TreasuryDetailReport> detailReportList)
+        private async Task<List<MinorityShareholderStatusReport>> GetMinorityShareholderStatusData(List<TreasuryDetailReport> detailReportList)
         {
-            List<MinorityShareholderStatusReport> floatingDataResult = new();
+            List<MinorityShareholderStatusReport> minorityShareholderReportList = new();
             List<BusinessReportType> latestReportCodeList = GetLatestReportCode();
+
             foreach (var detailReport in detailReportList)
             {
-                var baseUrl = "https://opendart.fss.or.kr/api/mrhlSttus.json";
-                var parameters = new Dictionary<string, string>
+                var result = await GetMinorityShareholderDataFromLatestReport(latestReportCodeList, detailReport);
+                if (result.isFetchSuccess && result.minorityShareholderReport!= null)
                 {
-                    ["crtfc_key"] = PrivateData.DART_API_KEY,
-                    ["corp_code"] = detailReport.CorpCode,
-                    ["bsns_year"] = GetLatestReportBusinessYear(latestReportCodeList[0]), // 사업 년도
-                    ["reprt_code"] = ((int)latestReportCodeList[0]).ToString(), // 보고서 코드
-                };
-
-                //var (isFetchSuccess, result) = await TryFetchMinorityShareholderData(baseUrl, parameters); // 멀티스레드 안전하게
-                bool isFetchSuccess = await TryGetMinorityShareholderReportAsync(baseUrl, parameters, floatingDataResult, detailReport.ReceiptNumber);
-
-                if (!isFetchSuccess)
+                    minorityShareholderReportList.Add(result.minorityShareholderReport);
+                }
+                else
                 {
-                    parameters["bsns_year"] = GetLatestReportBusinessYear(latestReportCodeList[1]);
-                    parameters["reprt_code"] = ((int)latestReportCodeList[1]).ToString();
-
-                    isFetchSuccess = await TryGetMinorityShareholderReportAsync(baseUrl, parameters, floatingDataResult, detailReport.ReceiptNumber);
-
-                    if (!isFetchSuccess)
-                    {
-                        _logger.Log($"No floating data fetch for corp_code: {parameters["corp_code"]}");
-                    }
+                    _logger.Log($"No minorityShareholderReport for corp_code: {detailReport.CorpCode}");
                 }
             }
-            /*
-             - corp_code: 고유번호
-             - corp_name: 법인명
-             - se: 구분 (ex. 소액주주)
-             - hold_stock_co: 보유 주식 수
-             - stock_tot_co: 총발행 주식수
-             - hold_stock_rate: 보유 주식 비율
-            */
-            return floatingDataResult;
+            return minorityShareholderReportList;
         }
 
-        // private async Taskbool> TryFetchMinorityShareholderData(string url, Dictionary<string, string> parameters)
-        private async Task<bool> TryGetMinorityShareholderReportAsync(string baseUrl, Dictionary<string, string> parameters, List<MinorityShareholderStatusReport> minorityShareholderReportList, string receiptNumber)
+        private async Task<(bool isFetchSuccess, MinorityShareholderStatusReport minorityShareholderReport)> GetMinorityShareholderDataFromLatestReport(
+            List<BusinessReportType> latestReportCodeList,
+            TreasuryDetailReport detailReport)
+        {
+            var baseUrl = "https://opendart.fss.or.kr/api/mrhlSttus.json";
+            var parameters = new Dictionary<string, string>
+            {
+                ["crtfc_key"] = PrivateData.DART_API_KEY,
+                ["corp_code"] = detailReport.CorpCode,
+            };
+
+            foreach (var reportCode in latestReportCodeList)
+            {
+                parameters["bsns_year"] = GetLatestReportBusinessYear(reportCode); // 사업 년도
+                parameters["reprt_code"] = ((int)reportCode).ToString(); // 보고서 코드
+
+                var result = await TryGetMinorityShareholderReportAsync(baseUrl, parameters, detailReport.ReceiptNumber);
+                if (result.isFetchSuccess)
+                {
+                    return result;
+                }
+            }
+            return (false, null);
+        }
+
+
+
+        private async Task<(bool isFetchSuccess, MinorityShareholderStatusReport minorityShareholderReport)> TryGetMinorityShareholderReportAsync(string baseUrl, Dictionary<string, string> parameters, string receiptNumber)
         {
             try
             {
@@ -318,35 +348,33 @@ namespace TelegramBot.Services
                     {
                         string body = await response.Content.ReadAsStringAsync();
                         using (var doc = JsonDocument.Parse(body))
+                        
+                        // TODO. JsonElement말고 JObject로 했을 때 이스케이프 문자열로 바뀌는지 확인
+                        if (doc.RootElement.TryGetProperty("list", out JsonElement minorityShareholderReportsJson)
+                            && minorityShareholderReportsJson.GetArrayLength() > 0
+                            )
                         {
-                            // TODO. JsonElement말고 JObject로 했을 때 이스케이프 문자열로 바뀌는지 확인
-                            if (doc.RootElement.TryGetProperty("list", out JsonElement minorityShareholderReportsJson)
-                                && minorityShareholderReportsJson.GetArrayLength() > 0
-                                )
+                            JsonElement minorityShareholderJson = minorityShareholderReportsJson[0]; // 데이터 하나만 존재
+                            var corpCode = (CorpClassType)Enum.Parse(typeof(CorpClassType), minorityShareholderJson.GetProperty("corp_cls").ToString());
+                            var minorityShareholderReport = new MinorityShareholderStatusReport()
                             {
-                                JsonElement minorityShareholderJson = minorityShareholderReportsJson[0]; // 데이터 하나만 존재
-                                var corpCode = (CorpClassType)Enum.Parse(typeof(CorpClassType), minorityShareholderJson.GetProperty("corp_cls").ToString());
-                                var minorityShareholderReport = new MinorityShareholderStatusReport()
-                                {
-                                    ReceiptNumber = receiptNumber, // minority데이터에 없어서 detail에서 가져옴. key로 쓰임
-                                    CorpClass = corpCode,
-                                    CorpCode = minorityShareholderJson.GetProperty("corp_code").ToString(),
-                                    CorpName = minorityShareholderJson.GetProperty("corp_name").ToString(),
-                                    Separation = minorityShareholderJson.GetProperty("se").ToString(),
-                                    ShareholderCount = minorityShareholderJson.GetProperty("shrholdr_co").ToString(),
-                                    ShareholderTotalCount = minorityShareholderJson.GetProperty("shrholdr_tot_co").ToString(),
-                                    ShareholderRate = minorityShareholderJson.GetProperty("shrholdr_rate").ToString(),
-                                    HoldStockCount = minorityShareholderJson.GetProperty("hold_stock_co").ToString(),
-                                    StockTotalCount = minorityShareholderJson.GetProperty("stock_tot_co").ToString(),
-                                    HoldStockRate = minorityShareholderJson.GetProperty("hold_stock_rate").ToString(),
-                                };
-                                minorityShareholderReportList.Add(minorityShareholderReport);
-                                return true;
-                            }
-                            else
-                            {
-                                _logger.Log("Fail to get list property from minorityShareholderData");
-                            }
+                                ReceiptNumber = receiptNumber, // minority데이터에 없어서 detail에서 가져옴. key로 쓰임
+                                CorpClass = corpCode,
+                                CorpCode = minorityShareholderJson.GetProperty("corp_code").ToString(),
+                                CorpName = minorityShareholderJson.GetProperty("corp_name").ToString(),
+                                Separation = minorityShareholderJson.GetProperty("se").ToString(),
+                                ShareholderCount = minorityShareholderJson.GetProperty("shrholdr_co").ToString(),
+                                ShareholderTotalCount = minorityShareholderJson.GetProperty("shrholdr_tot_co").ToString(),
+                                ShareholderRate = minorityShareholderJson.GetProperty("shrholdr_rate").ToString(),
+                                HoldStockCount = minorityShareholderJson.GetProperty("hold_stock_co").ToString(),
+                                StockTotalCount = minorityShareholderJson.GetProperty("stock_tot_co").ToString(),
+                                HoldStockRate = minorityShareholderJson.GetProperty("hold_stock_rate").ToString(),
+                            };
+                            return (true, minorityShareholderReport);
+                        }
+                        else
+                        {
+                            _logger.Log("Fail to get list property from minorityShareholderData");
                         }
                     }
                     else
@@ -363,7 +391,7 @@ namespace TelegramBot.Services
             {
                 _logger.Log($"Exception - floatingStockRateData: {ex.Message}");
             }
-            return false;
+            return (false, null);
         }
 
         // TODO: 장전 모든 회사들에 대한 최신 보고서 종류 및 년도 업데이트 필요
