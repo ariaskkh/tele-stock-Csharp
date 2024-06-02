@@ -1,4 +1,5 @@
 ﻿using Common.Interfaces;
+using Common.Models;
 using Telegram.Bot;
 using TelegramBot.Services;
 
@@ -13,7 +14,7 @@ namespace TelegramBot
         {
             _botClient = new TelegramBotClient(PrivateData.ACCESS_TOKEN);
             _treasuryStockService = new TreasuryStockService(logger);
-            _logger = logger
+            _logger = logger;
         }
 
         public async Task Start()
@@ -25,9 +26,9 @@ namespace TelegramBot
         private async Task SendMessages()
         {
             var messageList = _treasuryStockService.GetMessages();
-            foreach (var message in messageList)
+            foreach (Message message in messageList)
             {
-                await _botClient.SendTextMessageAsync(PrivateData.CHAT_ID, message);
+                await _botClient.SendTextMessageAsync(PrivateData.CHAT_ID, message.MessageContent);
             }
             _logger.Log("send Messages completed!");
         }
