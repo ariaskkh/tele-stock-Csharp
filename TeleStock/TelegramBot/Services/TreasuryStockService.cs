@@ -1,11 +1,8 @@
-﻿using Common.Interfaces;
+﻿using Common.Extensions;
+using Common.Interfaces;
 using Common.Models;
-using System;
-using System.Collections.Generic;
 using System.Net;
-using System.Text;
 using System.Text.Json;
-using TelegramBot;
 
 enum BusinessReportType
 {
@@ -50,7 +47,6 @@ namespace TelegramBot.Services
 
         async Task<List<MajorInfoReport>> GetMajorInfoReportList()
         {
-            //var _pageNumber = 1; // 페이지 번호
             var _pageCount = 100; // 페이지 별 건수
             var startDate = "20240529"; // TEST
             var endDate = GetTodayDate();
@@ -78,11 +74,9 @@ namespace TelegramBot.Services
             while (true)
             {
                 parameters["page_no"] = _pageNumber.ToString();
-                var queryString = GetQueryString(parameters);
-                var url = $"{baseUrl}?{queryString}";
                 try
                 {
-                    using (var response = await _httpClient.GetAsync(url))
+                    using (var response = await _httpClient.GetAsync(baseUrl.GetUrlWithQuery(parameters)))
                     {
                         if (HttpStatusCode.OK == response.StatusCode)
                         {
@@ -176,7 +170,6 @@ namespace TelegramBot.Services
                     continue;
                 companyList.Add(corpCode);
 
-                // 반복됨.
                 var baseUrl = "https://opendart.fss.or.kr/api/tsstkAqDecsn.json";
                 var parameters = new Dictionary<string, string>
                 {
@@ -185,13 +178,9 @@ namespace TelegramBot.Services
                     ["bgn_de"] = receptData,
                     ["end_de"] = receptData,
                 };
-
-                var queryString = GetQueryString(parameters); // 내부함수? extension? 하지만
-                var url = $"{baseUrl}?{queryString}";
-
                 try
                 {
-                    using (var response = await _httpClient.GetAsync(url))
+                    using (var response = await _httpClient.GetAsync(baseUrl.GetUrlWithQuery(parameters)))
                     {
                         if (HttpStatusCode.OK == response.StatusCode)
                         {
@@ -319,14 +308,11 @@ namespace TelegramBot.Services
         }
 
         // private async Taskbool> TryFetchMinorityShareholderData(string url, Dictionary<string, string> parameters)
-        private async Task<bool> TryGetMinorityShareholderReportAsync(string url, Dictionary<string, string> parameters, List<MinorityShareholderStatusReport> minorityShareholderReportList, string receiptNumber)
+        private async Task<bool> TryGetMinorityShareholderReportAsync(string baseUrl, Dictionary<string, string> parameters, List<MinorityShareholderStatusReport> minorityShareholderReportList, string receiptNumber)
         {
-            var queryString = GetQueryString(parameters);
-            var requestUrl = $"{url}?{queryString}";
-            //List<JsonElement> result = new();
             try
             {
-                using (var response = await _httpClient.GetAsync(requestUrl))
+                using (var response = await _httpClient.GetAsync(baseUrl.GetUrlWithQuery(parameters)))
                 {
                     if (HttpStatusCode.OK == response.StatusCode)
                     {
