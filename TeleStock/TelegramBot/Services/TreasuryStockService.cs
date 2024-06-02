@@ -322,8 +322,6 @@ namespace TelegramBot.Services
                             // TODO. JsonElement말고 JObject로 했을 때 이스케이프 문자열로 바뀌는지 확인
                             if (doc.RootElement.TryGetProperty("list", out JsonElement minorityShareholderReportsJson)
                                 && minorityShareholderReportsJson.GetArrayLength() > 0
-                                //&& minorityShareholderJson[0].TryGetProperty("hold_stock_rate", out var holdStockRate)
-                                //&& holdStockRate.ToString() != "-"
                                 )
                             {
                                 JsonElement minorityShareholderJson = minorityShareholderReportsJson[0]; // 데이터 하나만 존재
@@ -418,11 +416,6 @@ namespace TelegramBot.Services
             return year.ToString();
         }
 
-        private string GetQueryString(Dictionary<string, string> parameters)
-        {
-            return string.Join("&", parameters.Select(KeyValue => $"{Uri.EscapeDataString(KeyValue.Key)}={Uri.EscapeDataString(KeyValue.Value)}"));
-        }
-
         private Dictionary<string, TreasuryStock> MergeData(List<MajorInfoReport> majorInfoReportList, List<TreasuryDetailReport> detailReportList, List<MinorityShareholderStatusReport> minorityShareholderReportList)
         {
             var treasuryStockDict = new Dictionary<string, TreasuryStock>();
@@ -452,13 +445,15 @@ namespace TelegramBot.Services
         }
         private string GetAcquisitionRateOfFloatingStock(TreasuryDetailReport detailReport, string holdStockCount)
         {
-            var acquisitionNumberOfOrdinaryStock = detailReport.AcquisitionNumberOfOrdinaryStock ?? string.Empty;
-            var acquisitionNumberOfExtraordinaryStock = detailReport.AcquisitionNumberOfExtraordinaryStock ?? string.Empty;
-
-            var acquisitionStockNumber = acquisitionNumberOfOrdinaryStock == "-" ? acquisitionNumberOfExtraordinaryStock : acquisitionNumberOfOrdinaryStock;
+            var acquisitionStockNumber = detailReport.AcquisitionNumberOfOrdinaryStock != "-"
+                    ? detailReport.AcquisitionNumberOfOrdinaryStock
+                    : detailReport.AcquisitionNumberOfExtraordinaryStock ?? string.Empty;
 
             var floatingStockNumber = holdStockCount.Replace(",", "") ?? string.Empty;
-            var acquisitionRateOfFloatingStock = Math.Round((double.Parse(acquisitionStockNumber) / double.Parse(floatingStockNumber) * 100), 2).ToString();
+            var acquisitionRateOfFloatingStock = Math.Round(
+                (double.Parse(acquisitionStockNumber) / double.Parse(floatingStockNumber) * 100),
+                2)
+                .ToString();
             return acquisitionRateOfFloatingStock;
         }
 
