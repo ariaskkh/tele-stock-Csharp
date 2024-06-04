@@ -143,11 +143,11 @@ namespace TelegramBot.Services
         }
 
         // TODO: caching
-        //private static async void SaveOverviewJson(Dictionary<string, TreasuryStock> treasuryStockDick, string filePath)
-        //{
-        //    string json = JsonConvert.SerializeObject(treasuryStockDick);
-        //    await File.WriteAllTextAsync(Path.Combine(filePath, "list.json"), json);
-        //}
+        private static async void SaveOverviewJson(Dictionary<string, TreasuryStock> treasuryStockDick, string filePath)
+        {
+            string json = JsonConvert.SerializeObject(treasuryStockDick);
+            await File.WriteAllTextAsync(Path.Combine(filePath, "list.json"), json);
+        }
 
         private async Task<List<TreasuryDetailReport>> GetTreasuryDetailReport(List<MajorInfoReport> MajorInfoReportList)
         {
