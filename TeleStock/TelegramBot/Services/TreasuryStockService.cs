@@ -1,6 +1,7 @@
 ﻿using Common.Extensions;
 using Common.Interfaces;
 using Common.Models;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net;
 
@@ -18,7 +19,7 @@ namespace TelegramBot.Services
     {
         static readonly HttpClient _httpClient = new HttpClient();
         readonly ILogger _logger;
-        //private string FILE_PATH = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "../../../../TelegramBot/Data/"));
+        private string FILE_PATH = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "../../../../TelegramBot/Data/"));
 
         private List<MajorInfoReport> _majorInfoReportList = new();
         private List<TreasuryDetailReport> _detailReportList = new();
@@ -43,6 +44,7 @@ namespace TelegramBot.Services
             _detailReportList = await GetTreasuryDetailReport(_majorInfoReportList);
             _minorityShareholderDataList = await GetMinorityShareholderStatusData(_detailReportList);
             _treasuryStockDict = MergeData(_majorInfoReportList, _detailReportList, _minorityShareholderDataList);
+            SaveOverviewJson(_treasuryStockDict, FILE_PATH);
         }
 
         async Task<List<MajorInfoReport>> GetMajorInfoReportList()
@@ -112,26 +114,8 @@ namespace TelegramBot.Services
                     JObject json = JObject.Parse(body);
                     if (json.TryGetValue("list", out JToken majorInfoJson))
                     {
-                        foreach (var majorInfo in majorInfoJson)
-                        {
-                            var corpClassString = majorInfo["corp_cls"].ToString();
-                            var corpClass = (CorpClassType)Enum.Parse(typeof(CorpClassType), corpClassString);
-
-                            var majorInforReport = new MajorInfoReport()
-                            {
-                                ReceiptNumber = majorInfo["rcept_no"].ToString(),
-                                ReceiptDate = majorInfo["rcept_dt"].ToString(),
-                                CorpClass = corpClass,
-                                CorpCode = majorInfo["corp_code"].ToString(),
-                                CorpName = majorInfo["corp_name"].ToString(),
-                                ReportName = majorInfo["report_nm"].ToString(),
-                                StockCode = majorInfo["stock_code"].ToString(),
-                                Remarks = majorInfo["rm"].ToString(),
-                            };
-                            majorInfoReportList.Add(majorInforReport);
-                        }
+                        majorInfoReportList = majorInfoJson.Select(majorInfo => new MajorInfoReport(majorInfo)).ToList();
                     }
-
                     var totalPage = json["total_page"].ToObject<int>();
                     if (_pageNumber == totalPage)
                         stopLoop = true;
@@ -145,7 +129,7 @@ namespace TelegramBot.Services
             }
         }
 
-        private List<MajorInfoReport> FilterMajorInfoReport(List<MajorInfoReport> majorInfoReportList)
+        private static List<MajorInfoReport> FilterMajorInfoReport(List<MajorInfoReport> majorInfoReportList)
         {
             return majorInfoReportList.Where(majorInfo => IsTreasuryStockReport(majorInfo)).ToList();
 
@@ -159,10 +143,10 @@ namespace TelegramBot.Services
         }
 
         // TODO: caching
-        //private async void SaveOverviewJson(List<JsonElement> result)
+        //private static async void SaveOverviewJson(Dictionary<string, TreasuryStock> treasuryStockDick, string filePath)
         //{
-        //    string finalJson = JsonSerializer.Serialize(result);
-        //    await File.WriteAllTextAsync(Path.Combine(FILE_PATH, "list.json"), finalJson);
+        //    string json = JsonConvert.SerializeObject(treasuryStockDick);
+        //    await File.WriteAllTextAsync(Path.Combine(filePath, "list.json"), json);
         //}
 
         private async Task<List<TreasuryDetailReport>> GetTreasuryDetailReport(List<MajorInfoReport> MajorInfoReportList)
@@ -226,46 +210,9 @@ namespace TelegramBot.Services
                     string body = await response.Content.ReadAsStringAsync();
                     JObject json = JObject.Parse(body);
 
-                    if (json.TryGetValue("list", out JToken detailReportsJson)
-                        && detailReportsJson.Any())
+                    if (json.TryGetValue("list", out JToken detailReportsJson) && detailReportsJson.Any())
                     {
-                        var detailReporJson = detailReportsJson.FirstOrDefault(); // 한 개만 존재
-                        var corpClass = (CorpClassType)Enum.Parse(typeof(CorpClassType), detailReporJson["corp_cls"].ToString());
-
-                        var treasuryDetailReport = new TreasuryDetailReport()
-                        {
-                            ReceiptNumber = detailReporJson["rcept_no"].ToString(),
-                            AuditAttendance = detailReporJson["adt_a_atn"].ToString(),
-                            AcquisitionDate = detailReporJson["aq_dd"].ToString(),
-                            AcquisitionMethod = detailReporJson["aq_mth"].ToString(),
-                            AcquisitionPurpose = detailReporJson["aq_pp"].ToString(),
-                            AcquisitionWithinDevidendOrdinaryStock = detailReporJson["aq_wtn_div_ostk"].ToString(),
-                            AcquisitionWithinDevidendOrdinaryStockRate = detailReporJson["aq_wtn_div_ostk_rt"].ToString(),
-                            AcquisitionWithinDevidendExtraordinaryStock = detailReporJson["aq_wtn_div_estk"].ToString(),
-                            AcquisitionWithinDevidendExtraordinaryStockRate = detailReporJson["aq_wtn_div_estk_rt"].ToString(),
-                            ExpectedAcquisitionStartDate = detailReporJson["aqexpd_bgd"].ToString(),
-                            ExpectedAcquisitionEndDate = detailReporJson["aqexpd_edd"].ToString(),
-                            AcquisitionPriceOfOrdinaryStock = detailReporJson["aqpln_prc_ostk"].ToString(),
-                            AcquisitionPriceOfExtraordinaryStock = detailReporJson["aqpln_prc_estk"].ToString(),
-                            AcquisitionNumberOfOrdinaryStock = detailReporJson["aqpln_stk_ostk"].ToString(),
-                            AcquisitionNumberOfExtraordinaryStock = detailReporJson["aqpln_stk_estk"].ToString(),
-                            CorpClass = corpClass,
-                            CorpCode = detailReporJson["corp_code"].ToString(),
-                            CorpName = detailReporJson["corp_name"].ToString(),
-                            ConsignmentInvenstmentBrokerage = detailReporJson["cs_iv_bk"].ToString(),
-                            PurchaseLimitPerDayOfOrdinaryStock = detailReporJson["d1_prodlm_ostk"].ToString(),
-                            PurchaseLimitPerDayOfExtraordinaryStock = detailReporJson["d1_prodlm_estk"].ToString(),
-                            ExtraAcquisitionOrdinaryStock = detailReporJson["eaq_ostk"].ToString(),
-                            ExtraAcquisitionOrdinaryStockRate = detailReporJson["eaq_ostk_rt"].ToString(),
-                            ExtraAcquisitionExtraordinaryStock = detailReporJson["eaq_estk"].ToString(),
-                            ExtraAcquisitionExtraordinaryStockRate = detailReporJson["eaq_estk_rt"].ToString(),
-                            ExpectedHoldingPeriodStartData = detailReporJson["hdexpd_bgd"].ToString(),
-                            ExpectedHoldingPeriodEndData = detailReporJson["hdexpd_edd"].ToString(),
-                            OutsideDirectorAttendenceCount = detailReporJson["od_a_at_t"].ToString(),
-                            OutsideDirectorAbsentCount = detailReporJson["od_a_at_b"].ToString(),
-                        };
-
-                        detailReportList.Add(treasuryDetailReport);
+                        detailReportList.Add(new TreasuryDetailReport(detailReportsJson.FirstOrDefault()));
                     }
                 }
                 else
@@ -347,25 +294,9 @@ namespace TelegramBot.Services
                         string body = await response.Content.ReadAsStringAsync();
                         JObject json = JObject.Parse(body);
 
-                        if (json.TryGetValue("list", out JToken minorityShareholderReportsJson)
-                            && minorityShareholderReportsJson.Any())
+                        if (json.TryGetValue("list", out JToken minorityShareholderReportsJson) && minorityShareholderReportsJson.Any())
                         {
-                            JToken minorityShareholderJson = minorityShareholderReportsJson.FirstOrDefault(); // 데이터 하나만 존재
-                            var corpCode = (CorpClassType)Enum.Parse(typeof(CorpClassType), minorityShareholderJson["corp_cls"].ToString());
-                            var minorityShareholderReport = new MinorityShareholderStatusReport()
-                            {
-                                ReceiptNumber = receiptNumber, // minority데이터에 없어서 detail에서 가져옴. key로 쓰임
-                                CorpClass = corpCode,
-                                CorpCode = minorityShareholderJson["corp_code"].ToString(),
-                                CorpName = minorityShareholderJson["corp_name"].ToString(),
-                                Separation = minorityShareholderJson["se"].ToString(),
-                                ShareholderCount = minorityShareholderJson["shrholdr_co"].ToString(),
-                                ShareholderTotalCount = minorityShareholderJson["shrholdr_tot_co"].ToString(),
-                                ShareholderRate = minorityShareholderJson["shrholdr_rate"].ToString(),
-                                HoldStockCount = minorityShareholderJson["hold_stock_co"].ToString(),
-                                StockTotalCount = minorityShareholderJson["stock_tot_co"].ToString(),
-                                HoldStockRate = minorityShareholderJson["hold_stock_rate"].ToString(),
-                            };
+                            var minorityShareholderReport = new MinorityShareholderStatusReport(minorityShareholderReportsJson.FirstOrDefault(), receiptNumber);
                             return (true, minorityShareholderReport);
                         }
                         else
@@ -392,7 +323,7 @@ namespace TelegramBot.Services
 
         // TODO: 장전 모든 회사들에 대한 최신 보고서 종류 및 년도 업데이트 필요
         // 정기 보고서의 종류를 결정하기 위한 함수
-        private List<BusinessReportType> GetLatestReportCode(int settlementMonth = 12)
+        private static List<BusinessReportType> GetLatestReportCode(int settlementMonth = 12)
         {
             int reportTypeNumer = Enum.GetValues(typeof(BusinessReportType)).Length;
             const int TotalMonth = 12;
@@ -430,7 +361,7 @@ namespace TelegramBot.Services
             return reportCodeList;
         }
 
-        private string GetLatestReportBusinessYear(BusinessReportType reportCode)
+        private static string GetLatestReportBusinessYear(BusinessReportType reportCode)
         {
             var year = DateTime.Now.Year;
             if (reportCode == BusinessReportType.FOURTH_QUARTER)
@@ -443,42 +374,16 @@ namespace TelegramBot.Services
         private Dictionary<string, TreasuryStock> MergeData(List<MajorInfoReport> majorInfoReportList, List<TreasuryDetailReport> detailReportList, List<MinorityShareholderStatusReport> minorityShareholderReportList)
         {
             var treasuryStockDict = new Dictionary<string, TreasuryStock>();
-            foreach (MajorInfoReport majorInfoReport in majorInfoReportList)
+
+            return majorInfoReportList.Select(majorInfoReport =>
             {
                 var reciptNumber = majorInfoReport.ReceiptNumber ?? string.Empty; // unique key
                 var detailReport = detailReportList.Find(detaildata => detaildata.ReceiptNumber == reciptNumber);
                 var minorityShareholderReport = minorityShareholderReportList.Find(minoritydata => minoritydata.ReceiptNumber == reciptNumber);
-                var treasurystock = new TreasuryStock
-                {
-                    ReceiptNumber = reciptNumber,
-                    CorpName = majorInfoReport.CorpName,
-                    StockCode = majorInfoReport.StockCode,
-                    ReportName = majorInfoReport.ReportName,
-                    AcquisitionMethod = detailReport.AcquisitionMethod,
-                    AcquisitionPurpose = detailReport.AcquisitionPurpose,
-                    ExpectedAcquisitionStartDate = detailReport.ExpectedAcquisitionStartDate,
-                    ExpectedAcquisitionEndDate = detailReport.ExpectedAcquisitionEndDate,
-                    PlannedAcquisitionPriceOfOrdinaryStock = detailReport.AcquisitionPriceOfOrdinaryStock,
-                    IsOrdinaryStock = detailReport.IsOrdinaryStock,
-                    ExpectedAcquisitionMoney = detailReport.ExpectedAcquisitionMoney(),
-                    AcquisitionRateOfFloatingStock = GetAcquisitionRateOfFloatingStock(detailReport, minorityShareholderReport.HoldStockCount)
-                };
-                treasuryStockDict[reciptNumber] = treasurystock;
-            }
-            return treasuryStockDict;
-        }
-        private string GetAcquisitionRateOfFloatingStock(TreasuryDetailReport detailReport, string holdStockCount)
-        {
-            var acquisitionStockNumber = detailReport.AcquisitionNumberOfOrdinaryStock != "-"
-                    ? detailReport.AcquisitionNumberOfOrdinaryStock
-                    : detailReport.AcquisitionNumberOfExtraordinaryStock ?? string.Empty;
-
-            var floatingStockNumber = holdStockCount.Replace(",", "") ?? string.Empty;
-            var acquisitionRateOfFloatingStock = Math.Round(
-                (double.Parse(acquisitionStockNumber) / double.Parse(floatingStockNumber) * 100),
-                2)
-                .ToString();
-            return acquisitionRateOfFloatingStock;
+                return new TreasuryStock(majorInfoReport, detailReport, minorityShareholderReport.HoldStockCount);
+            }).ToDictionary(
+                (treasuryStock => treasuryStock.ReceiptNumber),
+                (treasuryStock => treasuryStock));
         }
 
         public List<Message> GetMessages()

@@ -16,5 +16,34 @@
         public string ExpectedAcquisitionMoney { get; init; }
         public string AcquisitionRateOfFloatingStock { get; init; }
 
+        public TreasuryStock(MajorInfoReport majorInfoReport, TreasuryDetailReport detailReport, string holdStockCount)
+        {
+            ReceiptNumber = majorInfoReport.ReceiptNumber;
+            CorpName = majorInfoReport.CorpName;
+            StockCode = majorInfoReport.StockCode;
+            ReportName = majorInfoReport.ReportName;
+            AcquisitionMethod = detailReport.AcquisitionMethod;
+            AcquisitionPurpose = detailReport.AcquisitionPurpose;
+            ExpectedAcquisitionStartDate = detailReport.ExpectedAcquisitionStartDate;
+            ExpectedAcquisitionEndDate = detailReport.ExpectedAcquisitionEndDate;
+            PlannedAcquisitionPriceOfOrdinaryStock = detailReport.AcquisitionPriceOfOrdinaryStock;
+            IsOrdinaryStock = detailReport.IsOrdinaryStock;
+            ExpectedAcquisitionMoney = detailReport.ExpectedAcquisitionMoney();
+            AcquisitionRateOfFloatingStock = GetAcquisitionRateOfFloatingStock(detailReport, holdStockCount);
+        }
+
+        private static string GetAcquisitionRateOfFloatingStock(TreasuryDetailReport detailReport, string holdStockCount)
+        {
+            var acquisitionStockNumber = detailReport.AcquisitionNumberOfOrdinaryStock != "-"
+                    ? detailReport.AcquisitionNumberOfOrdinaryStock
+                    : detailReport.AcquisitionNumberOfExtraordinaryStock ?? string.Empty;
+
+            var floatingStockNumber = holdStockCount.Replace(",", "") ?? string.Empty;
+            var acquisitionRateOfFloatingStock = Math.Round(
+                (double.Parse(acquisitionStockNumber) / double.Parse(floatingStockNumber) * 100),
+                2)
+                .ToString();
+            return acquisitionRateOfFloatingStock;
+        }
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace Common.Models
+﻿using Newtonsoft.Json.Linq;
+
+namespace Common.Models
 {
     public class TreasuryDetailReport 
     {
@@ -59,6 +61,41 @@
         public string OutsideDirectorAbsentCount { get; init; }
         
         public bool IsOrdinaryStock => AcquisitionNumberOfOrdinaryStock != "-" || AcquisitionPriceOfOrdinaryStock != "-";
+        public TreasuryDetailReport() { }
+
+        public TreasuryDetailReport(JToken detailJson)
+        {
+
+            ReceiptNumber = detailJson["rcept_no"].ToString();
+            AuditAttendance = detailJson["adt_a_atn"].ToString();
+            AcquisitionDate = detailJson["aq_dd"].ToString();
+            AcquisitionMethod = detailJson["aq_mth"].ToString();
+            AcquisitionPurpose = detailJson["aq_pp"].ToString();
+            AcquisitionWithinDevidendOrdinaryStock = detailJson["aq_wtn_div_ostk"].ToString();
+            AcquisitionWithinDevidendOrdinaryStockRate = detailJson["aq_wtn_div_ostk_rt"].ToString();
+            AcquisitionWithinDevidendExtraordinaryStock = detailJson["aq_wtn_div_estk"].ToString();
+            AcquisitionWithinDevidendExtraordinaryStockRate = detailJson["aq_wtn_div_estk_rt"].ToString();
+            ExpectedAcquisitionStartDate = detailJson["aqexpd_bgd"].ToString();
+            ExpectedAcquisitionEndDate = detailJson["aqexpd_edd"].ToString();
+            AcquisitionPriceOfOrdinaryStock = detailJson["aqpln_prc_ostk"].ToString();
+            AcquisitionPriceOfExtraordinaryStock = detailJson["aqpln_prc_estk"].ToString();
+            AcquisitionNumberOfOrdinaryStock = detailJson["aqpln_stk_ostk"].ToString();
+            AcquisitionNumberOfExtraordinaryStock = detailJson["aqpln_stk_estk"].ToString();
+            CorpClass = (CorpClassType)Enum.Parse(typeof(CorpClassType), detailJson["corp_cls"].ToString());
+            CorpCode = detailJson["corp_code"].ToString();
+            CorpName = detailJson["corp_name"].ToString();
+            ConsignmentInvenstmentBrokerage = detailJson["cs_iv_bk"].ToString();
+            PurchaseLimitPerDayOfOrdinaryStock = detailJson["d1_prodlm_ostk"].ToString();
+            PurchaseLimitPerDayOfExtraordinaryStock = detailJson["d1_prodlm_estk"].ToString();
+            ExtraAcquisitionOrdinaryStock = detailJson["eaq_ostk"].ToString();
+            ExtraAcquisitionOrdinaryStockRate = detailJson["eaq_ostk_rt"].ToString();
+            ExtraAcquisitionExtraordinaryStock = detailJson["eaq_estk"].ToString();
+            ExtraAcquisitionExtraordinaryStockRate = detailJson["eaq_estk_rt"].ToString();
+            ExpectedHoldingPeriodStartData = detailJson["hdexpd_bgd"].ToString();
+            ExpectedHoldingPeriodEndData = detailJson["hdexpd_edd"].ToString();
+            OutsideDirectorAttendenceCount = detailJson["od_a_at_t"].ToString();
+            OutsideDirectorAbsentCount = detailJson["od_a_at_b"].ToString();
+        }
 
         public string ExpectedAcquisitionMoney()
         {
