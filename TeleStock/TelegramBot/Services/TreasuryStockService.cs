@@ -1,8 +1,8 @@
 ﻿using Common.Extensions;
 using Common.Interfaces;
 using Common.Models;
+using Newtonsoft.Json.Linq;
 using System.Net;
-using System.Text.Json;
 
 enum BusinessReportType
 {
@@ -109,32 +109,32 @@ namespace TelegramBot.Services
                 if (HttpStatusCode.OK == response.StatusCode)
                 {
                     string body = await response.Content.ReadAsStringAsync();
-                    using (var doc = JsonDocument.Parse(body))
+                    JObject json = JObject.Parse(body);
+                    if (json.TryGetValue("list", out JToken majorInfoJson))
                     {
-                        JsonElement majorInfoJson = doc.RootElement.GetProperty("list");
-                        foreach (var majorInfo in majorInfoJson.EnumerateArray())
+                        foreach (var majorInfo in majorInfoJson)
                         {
-                            var corpClassString = majorInfo.GetProperty("corp_cls").ToString();
+                            var corpClassString = majorInfo["corp_cls"].ToString();
                             var corpClass = (CorpClassType)Enum.Parse(typeof(CorpClassType), corpClassString);
 
                             var majorInforReport = new MajorInfoReport()
                             {
-                                ReceiptNumber = majorInfo.GetProperty("rcept_no").ToString(),
-                                ReceiptDate = majorInfo.GetProperty("rcept_dt").ToString(),
+                                ReceiptNumber = majorInfo["rcept_no"].ToString(),
+                                ReceiptDate = majorInfo["rcept_dt"].ToString(),
                                 CorpClass = corpClass,
-                                CorpCode = majorInfo.GetProperty("corp_code").ToString(),
-                                CorpName = majorInfo.GetProperty("corp_name").ToString(),
-                                ReportName = majorInfo.GetProperty("report_nm").ToString(),
-                                StockCode = majorInfo.GetProperty("stock_code").ToString(),
-                                Remarks = majorInfo.GetProperty("rm").ToString(),
+                                CorpCode = majorInfo["corp_code"].ToString(),
+                                CorpName = majorInfo["corp_name"].ToString(),
+                                ReportName = majorInfo["report_nm"].ToString(),
+                                StockCode = majorInfo["stock_code"].ToString(),
+                                Remarks = majorInfo["rm"].ToString(),
                             };
                             majorInfoReportList.Add(majorInforReport);
                         }
-
-                        var totalPage = doc.RootElement.GetProperty("total_page").GetInt32();
-                        if (_pageNumber == totalPage)
-                            stopLoop = true;
                     }
+
+                    var totalPage = json["total_page"].ToObject<int>();
+                    if (_pageNumber == totalPage)
+                        stopLoop = true;
                     return (majorInfoReportList, stopLoop);
                 }
                 else
@@ -224,50 +224,48 @@ namespace TelegramBot.Services
                 if (HttpStatusCode.OK == response.StatusCode)
                 {
                     string body = await response.Content.ReadAsStringAsync();
-                    using (var doc = JsonDocument.Parse(body))
+                    JObject json = JObject.Parse(body);
+
+                    if (json.TryGetValue("list", out JToken detailReportsJson)
+                        && detailReportsJson.Any())
                     {
-                        // RootElement가 뭔지 확인해보기
-                        if (doc.RootElement.TryGetProperty("list", out JsonElement detailReportsJson)
-                            && detailReportsJson.GetArrayLength() > 0)
+                        var detailReporJson = detailReportsJson.FirstOrDefault(); // 한 개만 존재
+                        var corpClass = (CorpClassType)Enum.Parse(typeof(CorpClassType), detailReporJson["corp_cls"].ToString());
+
+                        var treasuryDetailReport = new TreasuryDetailReport()
                         {
-                            JsonElement detailReporJson = detailReportsJson[0]; // 한 개만 존재
-                            var corpClass = (CorpClassType)Enum.Parse(typeof(CorpClassType), detailReporJson.GetProperty("corp_cls").ToString());
+                            ReceiptNumber = detailReporJson["rcept_no"].ToString(),
+                            AuditAttendance = detailReporJson["adt_a_atn"].ToString(),
+                            AcquisitionDate = detailReporJson["aq_dd"].ToString(),
+                            AcquisitionMethod = detailReporJson["aq_mth"].ToString(),
+                            AcquisitionPurpose = detailReporJson["aq_pp"].ToString(),
+                            AcquisitionWithinDevidendOrdinaryStock = detailReporJson["aq_wtn_div_ostk"].ToString(),
+                            AcquisitionWithinDevidendOrdinaryStockRate = detailReporJson["aq_wtn_div_ostk_rt"].ToString(),
+                            AcquisitionWithinDevidendExtraordinaryStock = detailReporJson["aq_wtn_div_estk"].ToString(),
+                            AcquisitionWithinDevidendExtraordinaryStockRate = detailReporJson["aq_wtn_div_estk_rt"].ToString(),
+                            ExpectedAcquisitionStartDate = detailReporJson["aqexpd_bgd"].ToString(),
+                            ExpectedAcquisitionEndDate = detailReporJson["aqexpd_edd"].ToString(),
+                            AcquisitionPriceOfOrdinaryStock = detailReporJson["aqpln_prc_ostk"].ToString(),
+                            AcquisitionPriceOfExtraordinaryStock = detailReporJson["aqpln_prc_estk"].ToString(),
+                            AcquisitionNumberOfOrdinaryStock = detailReporJson["aqpln_stk_ostk"].ToString(),
+                            AcquisitionNumberOfExtraordinaryStock = detailReporJson["aqpln_stk_estk"].ToString(),
+                            CorpClass = corpClass,
+                            CorpCode = detailReporJson["corp_code"].ToString(),
+                            CorpName = detailReporJson["corp_name"].ToString(),
+                            ConsignmentInvenstmentBrokerage = detailReporJson["cs_iv_bk"].ToString(),
+                            PurchaseLimitPerDayOfOrdinaryStock = detailReporJson["d1_prodlm_ostk"].ToString(),
+                            PurchaseLimitPerDayOfExtraordinaryStock = detailReporJson["d1_prodlm_estk"].ToString(),
+                            ExtraAcquisitionOrdinaryStock = detailReporJson["eaq_ostk"].ToString(),
+                            ExtraAcquisitionOrdinaryStockRate = detailReporJson["eaq_ostk_rt"].ToString(),
+                            ExtraAcquisitionExtraordinaryStock = detailReporJson["eaq_estk"].ToString(),
+                            ExtraAcquisitionExtraordinaryStockRate = detailReporJson["eaq_estk_rt"].ToString(),
+                            ExpectedHoldingPeriodStartData = detailReporJson["hdexpd_bgd"].ToString(),
+                            ExpectedHoldingPeriodEndData = detailReporJson["hdexpd_edd"].ToString(),
+                            OutsideDirectorAttendenceCount = detailReporJson["od_a_at_t"].ToString(),
+                            OutsideDirectorAbsentCount = detailReporJson["od_a_at_b"].ToString(),
+                        };
 
-                            var treasuryDetailReport = new TreasuryDetailReport()
-                            {
-                                ReceiptNumber = detailReporJson.GetProperty("rcept_no").ToString(),
-                                AuditAttendance = detailReporJson.GetProperty("adt_a_atn").ToString(),
-                                AcquisitionDate = detailReporJson.GetProperty("aq_dd").ToString(),
-                                AcquisitionMethod = detailReporJson.GetProperty("aq_mth").ToString(),
-                                AcquisitionPurpose = detailReporJson.GetProperty("aq_pp").ToString(),
-                                AcquisitionWithinDevidendOrdinaryStock = detailReporJson.GetProperty("aq_wtn_div_ostk").ToString(),
-                                AcquisitionWithinDevidendOrdinaryStockRate = detailReporJson.GetProperty("aq_wtn_div_ostk_rt").ToString(),
-                                AcquisitionWithinDevidendExtraordinaryStock = detailReporJson.GetProperty("aq_wtn_div_estk").ToString(),
-                                AcquisitionWithinDevidendExtraordinaryStockRate = detailReporJson.GetProperty("aq_wtn_div_estk_rt").ToString(),
-                                ExpectedAcquisitionStartDate = detailReporJson.GetProperty("aqexpd_bgd").ToString(),
-                                ExpectedAcquisitionEndDate = detailReporJson.GetProperty("aqexpd_edd").ToString(),
-                                AcquisitionPriceOfOrdinaryStock = detailReporJson.GetProperty("aqpln_prc_ostk").ToString(),
-                                AcquisitionPriceOfExtraordinaryStock = detailReporJson.GetProperty("aqpln_prc_estk").ToString(),
-                                AcquisitionNumberOfOrdinaryStock = detailReporJson.GetProperty("aqpln_stk_ostk").ToString(),
-                                AcquisitionNumberOfExtraordinaryStock = detailReporJson.GetProperty("aqpln_stk_estk").ToString(),
-                                CorpClass = corpClass,
-                                CorpCode = detailReporJson.GetProperty("corp_code").ToString(),
-                                CorpName = detailReporJson.GetProperty("corp_name").ToString(),
-                                ConsignmentInvenstmentBrokerage = detailReporJson.GetProperty("cs_iv_bk").ToString(),
-                                PurchaseLimitPerDayOfOrdinaryStock = detailReporJson.GetProperty("d1_prodlm_ostk").ToString(),
-                                PurchaseLimitPerDayOfExtraordinaryStock = detailReporJson.GetProperty("d1_prodlm_estk").ToString(),
-                                ExtraAcquisitionOrdinaryStock = detailReporJson.GetProperty("eaq_ostk").ToString(),
-                                ExtraAcquisitionOrdinaryStockRate = detailReporJson.GetProperty("eaq_ostk_rt").ToString(),
-                                ExtraAcquisitionExtraordinaryStock = detailReporJson.GetProperty("eaq_estk").ToString(),
-                                ExtraAcquisitionExtraordinaryStockRate = detailReporJson.GetProperty("eaq_estk_rt").ToString(),
-                                ExpectedHoldingPeriodStartData = detailReporJson.GetProperty("hdexpd_bgd").ToString(),
-                                ExpectedHoldingPeriodEndData = detailReporJson.GetProperty("hdexpd_edd").ToString(),
-                                OutsideDirectorAttendenceCount = detailReporJson.GetProperty("od_a_at_t").ToString(),
-                                OutsideDirectorAbsentCount = detailReporJson.GetProperty("od_a_at_b").ToString(),
-                            };
-
-                            detailReportList.Add(treasuryDetailReport);
-                        }
+                        detailReportList.Add(treasuryDetailReport);
                     }
                 }
                 else
@@ -347,28 +345,26 @@ namespace TelegramBot.Services
                     if (HttpStatusCode.OK == response.StatusCode)
                     {
                         string body = await response.Content.ReadAsStringAsync();
-                        using (var doc = JsonDocument.Parse(body))
-                        
-                        // TODO. JsonElement말고 JObject로 했을 때 이스케이프 문자열로 바뀌는지 확인
-                        if (doc.RootElement.TryGetProperty("list", out JsonElement minorityShareholderReportsJson)
-                            && minorityShareholderReportsJson.GetArrayLength() > 0
-                            )
+                        JObject json = JObject.Parse(body);
+
+                        if (json.TryGetValue("list", out JToken minorityShareholderReportsJson)
+                            && minorityShareholderReportsJson.Any())
                         {
-                            JsonElement minorityShareholderJson = minorityShareholderReportsJson[0]; // 데이터 하나만 존재
-                            var corpCode = (CorpClassType)Enum.Parse(typeof(CorpClassType), minorityShareholderJson.GetProperty("corp_cls").ToString());
+                            JToken minorityShareholderJson = minorityShareholderReportsJson.FirstOrDefault(); // 데이터 하나만 존재
+                            var corpCode = (CorpClassType)Enum.Parse(typeof(CorpClassType), minorityShareholderJson["corp_cls"].ToString());
                             var minorityShareholderReport = new MinorityShareholderStatusReport()
                             {
                                 ReceiptNumber = receiptNumber, // minority데이터에 없어서 detail에서 가져옴. key로 쓰임
                                 CorpClass = corpCode,
-                                CorpCode = minorityShareholderJson.GetProperty("corp_code").ToString(),
-                                CorpName = minorityShareholderJson.GetProperty("corp_name").ToString(),
-                                Separation = minorityShareholderJson.GetProperty("se").ToString(),
-                                ShareholderCount = minorityShareholderJson.GetProperty("shrholdr_co").ToString(),
-                                ShareholderTotalCount = minorityShareholderJson.GetProperty("shrholdr_tot_co").ToString(),
-                                ShareholderRate = minorityShareholderJson.GetProperty("shrholdr_rate").ToString(),
-                                HoldStockCount = minorityShareholderJson.GetProperty("hold_stock_co").ToString(),
-                                StockTotalCount = minorityShareholderJson.GetProperty("stock_tot_co").ToString(),
-                                HoldStockRate = minorityShareholderJson.GetProperty("hold_stock_rate").ToString(),
+                                CorpCode = minorityShareholderJson["corp_code"].ToString(),
+                                CorpName = minorityShareholderJson["corp_name"].ToString(),
+                                Separation = minorityShareholderJson["se"].ToString(),
+                                ShareholderCount = minorityShareholderJson["shrholdr_co"].ToString(),
+                                ShareholderTotalCount = minorityShareholderJson["shrholdr_tot_co"].ToString(),
+                                ShareholderRate = minorityShareholderJson["shrholdr_rate"].ToString(),
+                                HoldStockCount = minorityShareholderJson["hold_stock_co"].ToString(),
+                                StockTotalCount = minorityShareholderJson["stock_tot_co"].ToString(),
+                                HoldStockRate = minorityShareholderJson["hold_stock_rate"].ToString(),
                             };
                             return (true, minorityShareholderReport);
                         }
