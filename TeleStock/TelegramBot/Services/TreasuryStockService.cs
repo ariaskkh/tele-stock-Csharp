@@ -1,7 +1,7 @@
-﻿using Common.Extensions;
+﻿using Common.Database;
+using Common.Extensions;
 using Common.Interfaces;
 using Common.Models;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net;
 
@@ -19,16 +19,17 @@ namespace TelegramBot.Services
     {
         static readonly HttpClient _httpClient = new HttpClient();
         readonly ILogger _logger;
-        private string FILE_PATH = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "../../../../TelegramBot/Data/"));
-
+        
         private List<MajorInfoReport> _majorInfoReportList = new();
         private List<TreasuryDetailReport> _detailReportList = new();
         private List<MinorityShareholderStatusReport> _minorityShareholderDataList = new();
         private Dictionary<string, TreasuryStock> _treasuryStockDict = new();
+        private ITreasuryStockDocument _db;
 
-        public TreasuryStockService(ILogger logger)
+        public TreasuryStockService(ILogger logger, ITreasuryStockDocument db)
         {
-            this._logger = logger;
+            _logger = logger;
+            _db = db;
             SetHttpClient();
         }
 
@@ -44,7 +45,7 @@ namespace TelegramBot.Services
             _detailReportList = await GetTreasuryDetailReport(_majorInfoReportList);
             _minorityShareholderDataList = await GetMinorityShareholderStatusData(_detailReportList);
             _treasuryStockDict = MergeData(_majorInfoReportList, _detailReportList, _minorityShareholderDataList);
-            SaveOverviewJson(_treasuryStockDict, FILE_PATH);
+            SaveOverviewJson(_treasuryStockDict);
         }
 
         async Task<List<MajorInfoReport>> GetMajorInfoReportList()
@@ -143,10 +144,12 @@ namespace TelegramBot.Services
         }
 
         // TODO: caching
-        private static async void SaveOverviewJson(Dictionary<string, TreasuryStock> treasuryStockDick, string filePath)
+        private async Task SaveOverviewJson(Dictionary<string, TreasuryStock> treasuryStockDick)
         {
-            string json = JsonConvert.SerializeObject(treasuryStockDick);
-            await File.WriteAllTextAsync(Path.Combine(filePath, "list.json"), json);
+            if (treasuryStockDick?.Any() ?? false)
+            {
+                await _db.Save<string, TreasuryStock>(treasuryStockDick, new FileOption());
+            }
         }
 
         private async Task<List<TreasuryDetailReport>> GetTreasuryDetailReport(List<MajorInfoReport> MajorInfoReportList)
