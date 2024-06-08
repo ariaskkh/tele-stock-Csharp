@@ -48,11 +48,13 @@ namespace TelegramBot.Services
             SaveOverviewJson(_treasuryStockDict);
         }
 
-        async Task<List<MajorInfoReport>> GetMajorInfoReportList()
+        private async Task<List<MajorInfoReport>> GetMajorInfoReportList()
         {   
             List<MajorInfoReport> majorInfoReportList = await GetMajorInfoReportListAsync();
             // TODO: cache check logic
-            return FilterMajorInfoReport(majorInfoReportList);
+            var TreasuryMajorInfoReport = FilterMajorInfoReport(majorInfoReportList);
+            var a = await FilterSavedData(TreasuryMajorInfoReport);
+            return a;
         }
 
         private async Task<List<MajorInfoReport>?> GetMajorInfoReportListAsync()
@@ -130,9 +132,11 @@ namespace TelegramBot.Services
             }
         }
 
-        private static List<MajorInfoReport> FilterMajorInfoReport(List<MajorInfoReport> majorInfoReportList)
+        private List<MajorInfoReport> FilterMajorInfoReport(List<MajorInfoReport> majorInfoReportList)
         {
-            return majorInfoReportList.Where(majorInfo => IsTreasuryStockReport(majorInfo)).ToList();
+            return majorInfoReportList
+                .Where(majorInfo => IsTreasuryStockReport(majorInfo))
+                .ToList();
 
             bool IsTreasuryStockReport(MajorInfoReport majorInfo)
             {
@@ -143,12 +147,20 @@ namespace TelegramBot.Services
             }
         }
 
+        private async Task<List<MajorInfoReport>> FilterSavedData(List<MajorInfoReport> majorInfoReport)
+        {
+            Dictionary<string, TreasuryStock> savedTreasuryStockDict = await _db.LoadAsync(new FileOption());
+            return majorInfoReport
+                .Where(majorInfoReport => !savedTreasuryStockDict.ContainsKey(majorInfoReport.ReceiptNumber))
+                .ToList();
+        }
+
         // TODO: caching
         private async Task SaveOverviewJson(Dictionary<string, TreasuryStock> treasuryStockDick)
         {
             if (treasuryStockDick?.Any() ?? false)
             {
-                await _db.Save<string, TreasuryStock>(treasuryStockDick, new FileOption());
+                await _db.SaveAsync(treasuryStockDick, new FileOption());
             }
         }
 

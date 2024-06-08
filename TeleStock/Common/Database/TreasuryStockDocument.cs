@@ -1,21 +1,37 @@
-﻿using Newtonsoft.Json;
+﻿using Common.Models;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Linq;
 
 namespace Common.Database
 {
     public interface ITreasuryStockDocument
     {
-        Task Save<T1, T2>(Dictionary<T1, T2> treasuryStockDict, FileOption? option);
+        Task SaveAsync(Dictionary<string, TreasuryStock> treasuryStockDict, FileOption? option);
+        Task<Dictionary<string, TreasuryStock>> LoadAsync(FileOption? option);
         //bool CheckFileExistInThePath(string path, string fileName);
-        //Task<Dictionary<T1, T2>> Load();
     }
 
     public class TreasuryStockDocument : ITreasuryStockDocument
     {
-        public async Task Save<T1, T2>(Dictionary<T1, T2> treasuryStockDict, FileOption option)
+        public async Task SaveAsync(Dictionary<string, TreasuryStock> treasuryStockDict, FileOption option)
         {
             JObject json = JObject.FromObject(treasuryStockDict);
             await File.WriteAllTextAsync(Path.Combine(option.FilePath, option.FileName), json.ToString());
+        }
+
+        public async Task<Dictionary<string, TreasuryStock>> LoadAsync(FileOption option)
+        {
+            string jsonData = await File.ReadAllTextAsync(Path.Combine(option.FilePath, option.FileName));
+
+            var jsonObject = JObject.Parse(jsonData);
+            return jsonObject
+                .ToObject<Dictionary<string, JObject>>()
+                .Select(keyValuePair => new TreasuryStock(keyValuePair.Value))
+                .ToDictionary(
+                (treasuryStock) => treasuryStock.ReceiptNumber,
+                (treasuryStock) => treasuryStock
+                );
         }
     }
 

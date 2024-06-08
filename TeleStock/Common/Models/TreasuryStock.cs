@@ -1,4 +1,6 @@
-﻿namespace Common.Models
+﻿using Newtonsoft.Json.Linq;
+
+namespace Common.Models
 {
     public class TreasuryStock
     {
@@ -30,6 +32,24 @@
             IsOrdinaryStock = detailReport.IsOrdinaryStock;
             ExpectedAcquisitionMoney = detailReport.ExpectedAcquisitionMoney();
             AcquisitionRateOfFloatingStock = GetAcquisitionRateOfFloatingStock(detailReport, holdStockCount);
+        }
+
+        // db에서 Load할 때
+        public TreasuryStock(JObject obj)
+        {
+            var a =obj["ReceiptNumber"];
+            ReceiptNumber = (string)obj["ReceiptNumber"];
+            CorpName = (string)obj["CorpName"];
+            StockCode = (string)obj["StockCode"];
+            ReportName = (string)obj["ReportName"];
+            AcquisitionMethod = (string)obj["AcquisitionMethod"];
+            AcquisitionPurpose = (string)obj["AcquisitionPurpose"];
+            ExpectedAcquisitionStartDate = (string)obj["ExpectedAcquisitionStartDate"];
+            ExpectedAcquisitionEndDate = (string)obj["ExpectedAcquisitionEndDate"];
+            PlannedAcquisitionPriceOfOrdinaryStock = (string)obj["PlannedAcquisitionPriceOfOrdinaryStock"];
+            IsOrdinaryStock = (bool)obj["IsOrdinaryStock"];
+            ExpectedAcquisitionMoney = (string)obj["ExpectedAcquisitionMoney"];
+            AcquisitionRateOfFloatingStock = (string)obj["AcquisitionRateOfFloatingStock"];
         }
 
         private static string GetAcquisitionRateOfFloatingStock(TreasuryDetailReport detailReport, string holdStockCount)

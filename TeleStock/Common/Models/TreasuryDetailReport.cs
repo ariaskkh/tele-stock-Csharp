@@ -61,6 +61,7 @@ namespace Common.Models
         public string OutsideDirectorAbsentCount { get; init; }
         
         public bool IsOrdinaryStock => AcquisitionNumberOfOrdinaryStock != "-" || AcquisitionPriceOfOrdinaryStock != "-";
+        public bool HasAcquisitionPriceData => AcquisitionPriceOfOrdinaryStock != "-" && AcquisitionPriceOfExtraordinaryStock != "-";
         public TreasuryDetailReport() { }
 
         public TreasuryDetailReport(JToken detailJson)
@@ -99,6 +100,11 @@ namespace Common.Models
 
         public string ExpectedAcquisitionMoney()
         {
+            if (!HasAcquisitionPriceData)
+            {
+                return "-";
+            }
+
             if (IsOrdinaryStock)
             {
                 return Math.Round((double)(long.Parse(AcquisitionPriceOfOrdinaryStock.Replace(",", "")) / 100000000)).ToString();
