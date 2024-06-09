@@ -53,8 +53,7 @@ namespace TelegramBot.Services
             List<MajorInfoReport> majorInfoReportList = await GetMajorInfoReportListAsync();
             // TODO: cache check logic
             var TreasuryMajorInfoReport = FilterMajorInfoReport(majorInfoReportList);
-            var a = await FilterSavedData(TreasuryMajorInfoReport);
-            return a;
+            return await FilterSavedData(TreasuryMajorInfoReport);
         }
 
         private async Task<List<MajorInfoReport>?> GetMajorInfoReportListAsync()

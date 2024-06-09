@@ -18,7 +18,7 @@ namespace TelegramBotClient
         void InittializeTelegramBot()
         {
             _logger = new Logger(textBox1);
-            var db = new TreasuryStockDocument();
+            var db = new TreasuryStockDocument(_logger);
             _telegramBot = new TelegramBot.TelegramBot(_logger, db);
         }
 
