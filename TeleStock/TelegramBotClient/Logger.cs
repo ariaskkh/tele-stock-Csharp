@@ -13,7 +13,14 @@ namespace TelegramBotClient
 
         public void Log(string message)
         {
-            _textBox.AppendText(message + Environment.NewLine);
+            if (_textBox.InvokeRequired)
+            {
+                _textBox.Invoke(new Action(() => Log(message)));
+            }
+            else
+            {
+                _textBox.AppendText(message + Environment.NewLine);
+            }
         }
     }
 }

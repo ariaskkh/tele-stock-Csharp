@@ -4,12 +4,20 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TelegramBotClient", "TelegramBotClient\TelegramBotClient.csproj", "{9C00ACD4-83E5-40C0-A0BA-E3B362D9E582}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BEDE85D2-11DB-4A18-9C4E-63A78B4306EE} = {BEDE85D2-11DB-4A18-9C4E-63A78B4306EE}
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TelegramBot", "TelegramBot\TelegramBot.csproj", "{A9405235-44AF-40A3-9F53-9A34262E46A7}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Practice", "Practice\Practice.csproj", "{14D93CBC-6C48-4044-A3D3-00454FD099E0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{6DB01985-CEC7-4310-B262-1C827EDA672F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Common", "Common\Common.csproj", "{6DB01985-CEC7-4310-B262-1C827EDA672F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scheduler", "Scheduler\Scheduler.csproj", "{BEDE85D2-11DB-4A18-9C4E-63A78B4306EE}"
+	ProjectSection(ProjectDependencies) = postProject
+		{6DB01985-CEC7-4310-B262-1C827EDA672F} = {6DB01985-CEC7-4310-B262-1C827EDA672F}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +41,10 @@ Global
 		{6DB01985-CEC7-4310-B262-1C827EDA672F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6DB01985-CEC7-4310-B262-1C827EDA672F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6DB01985-CEC7-4310-B262-1C827EDA672F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BEDE85D2-11DB-4A18-9C4E-63A78B4306EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BEDE85D2-11DB-4A18-9C4E-63A78B4306EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BEDE85D2-11DB-4A18-9C4E-63A78B4306EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BEDE85D2-11DB-4A18-9C4E-63A78B4306EE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

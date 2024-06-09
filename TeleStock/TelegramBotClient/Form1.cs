@@ -7,8 +7,9 @@ namespace TelegramBotClient
 {
     public partial class Form1 : Form
     {
-        ILogger? _logger;
-        TelegramBot.TelegramBot? _telegramBot;
+        private ILogger? _logger;
+        private TelegramBot.TelegramBot? _telegramBot;
+
         public Form1()
         {
             InitializeComponent();
@@ -22,11 +23,19 @@ namespace TelegramBotClient
             _telegramBot = new TelegramBot.TelegramBot(_logger, db);
         }
 
-        void startButton_Click(object sender, EventArgs e)
+        private void StartButton_Click(object sender, EventArgs e)
         {
             if (_telegramBot != null)
             {
                 _telegramBot.Start();
+            }
+        }
+
+        private void StopButton_Click(object sender, EventArgs e)
+        {
+            if (_telegramBot != null)
+            {
+                _telegramBot.Stop();
             }
         }
     }

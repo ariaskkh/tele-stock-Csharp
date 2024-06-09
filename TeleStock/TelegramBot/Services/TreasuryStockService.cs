@@ -41,17 +41,20 @@ namespace TelegramBot.Services
 
         public async Task UpdateDataAsync()
         {
+            _treasuryStockDict = new(); // 초기화
             _majorInfoReportList = await GetMajorInfoReportList();
-            _detailReportList = await GetTreasuryDetailReport(_majorInfoReportList);
-            _minorityShareholderDataList = await GetMinorityShareholderStatusData(_detailReportList);
-            _treasuryStockDict = MergeData(_majorInfoReportList, _detailReportList, _minorityShareholderDataList);
-            SaveOverviewJson(_treasuryStockDict);
+            if (_majorInfoReportList?.Any() ?? false)
+            {
+                _detailReportList = await GetTreasuryDetailReport(_majorInfoReportList);
+                _minorityShareholderDataList = await GetMinorityShareholderStatusData(_detailReportList);
+                _treasuryStockDict = MergeData(_majorInfoReportList, _detailReportList, _minorityShareholderDataList);
+                SaveOverviewJson(_treasuryStockDict);
+            }
         }
 
         private async Task<List<MajorInfoReport>> GetMajorInfoReportList()
         {   
             List<MajorInfoReport> majorInfoReportList = await GetMajorInfoReportListAsync();
-            // TODO: cache check logic
             var TreasuryMajorInfoReport = FilterMajorInfoReport(majorInfoReportList);
             return await FilterSavedData(TreasuryMajorInfoReport);
         }

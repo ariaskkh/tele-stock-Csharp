@@ -1,6 +1,7 @@
 ﻿using Common.Database;
 using Common.Interfaces;
 using Common.Models;
+using Scheduler;
 using Telegram.Bot;
 using TelegramBot.Services;
 
@@ -10,28 +11,45 @@ namespace TelegramBot
     {
         TelegramBotClient? _botClient;
         TreasuryStockService _treasuryStockService;
+        TreasuryStockScheduler _scheduler;
         ILogger _logger;
+
         public TelegramBot(ILogger logger, ITreasuryStockDocument db)
         {
             _botClient = new TelegramBotClient(PrivateData.ACCESS_TOKEN);
             _treasuryStockService = new TreasuryStockService(logger, db);
+            _scheduler = new TreasuryStockScheduler(logger);
             _logger = logger;
         }
 
-        public async Task Start()
+        public void Start()
+        {
+            _scheduler.Start(StartTelegramBot);
+        }
+
+        public void Stop()
+        {
+            _scheduler.Stop();
+        }
+
+        private async Task StartTelegramBot()
         {
             await _treasuryStockService.UpdateDataAsync();
             await SendMessages();
         }
 
+
         private async Task SendMessages()
         {
             var messageList = _treasuryStockService.GetMessages();
-            foreach (Message message in messageList)
+            if (messageList?.Any() ?? false)
             {
-                await _botClient.SendTextMessageAsync(PrivateData.CHAT_ID, message.MessageContent);
+                foreach (Message message in messageList)
+                {
+                    await _botClient.SendTextMessageAsync(PrivateData.CHAT_ID, message.MessageContent);
+                }
+                _logger.Log("send Messages completed!");
             }
-            _logger.Log("send Messages completed!");
         }
     }
 }
