@@ -63,8 +63,9 @@ namespace TelegramBot.Services
         {
             var _pageNumber = 0; // 페이지 번호
             var _pageCount = 100; // 페이지 별 건수
-            var startDate = "20240529"; // TEST
-            var endDate = GetTodayDate();
+            var startDate = "20240617"; // TEST
+            var endDate = "20240618";
+            //var endDate = GetTodayDate();
             var majorInfoReportNumber = "B001";
             var baseUrl = "http://opendart.fss.or.kr/api/list.json";
             var parameters = new Dictionary<string, string>
@@ -196,10 +197,13 @@ namespace TelegramBot.Services
                 };
                 try
                 {
-                    var result  = await FetchTreasuryDetailReportAsync(baseUrl.GetUrlWithQuery(parameters));
-                    if (result != null)
+                    var treasuryDetail  = await FetchTreasuryDetailReportAsync(baseUrl.GetUrlWithQuery(parameters));
+
+                    CheckReportCorrected(treasuryDetail, MajorInfoReport.ReceiptNumber);
+
+                    if (treasuryDetail != null)
                     {
-                        detailReportList.AddRange(result);
+                        detailReportList.Add(treasuryDetail);
                     }
                 }
                 catch (HttpRequestException ex)
@@ -217,9 +221,22 @@ namespace TelegramBot.Services
             return detailReportList;
         }
 
-        private async Task<List<TreasuryDetailReport>> FetchTreasuryDetailReportAsync(string url)
+        // 공시 정정으로 ReceiptNumber 변경되었는지 확인. majorInfoReceiptNumber가 original이다.
+        private void CheckReportCorrected(TreasuryDetailReport treasuryDetailReport, string majorInfoReceiptNumber)
         {
-            List<TreasuryDetailReport> detailReportList = new();
+            if (treasuryDetailReport.ReceiptNumber != majorInfoReceiptNumber)
+            {
+                treasuryDetailReport.ReceiptNumber = majorInfoReceiptNumber;
+                treasuryDetailReport.Corrected = true;
+            }
+            else
+            {
+                return;
+            }
+        }
+
+        private async Task<TreasuryDetailReport> FetchTreasuryDetailReportAsync(string url)
+        {
             using (var response = await _httpClient.GetAsync(url))
             {
                 if (HttpStatusCode.OK == response.StatusCode)
@@ -229,7 +246,7 @@ namespace TelegramBot.Services
 
                     if (json.TryGetValue("list", out JToken detailReportsJson) && detailReportsJson.Any())
                     {
-                        detailReportList.Add(new TreasuryDetailReport(detailReportsJson.FirstOrDefault()));
+                        return new TreasuryDetailReport(detailReportsJson.FirstOrDefault());
                     }
                 }
                 else
@@ -238,7 +255,7 @@ namespace TelegramBot.Services
                     return default;
                 }
             }
-            return detailReportList;
+            return default;
         }
 
         private static string GetTodayDate()
@@ -388,6 +405,7 @@ namespace TelegramBot.Services
             return year.ToString();
         }
 
+        // 
         private Dictionary<string, TreasuryStock> MergeData(List<MajorInfoReport> majorInfoReportList, List<TreasuryDetailReport> detailReportList, List<MinorityShareholderStatusReport> minorityShareholderReportList)
         {
             var treasuryStockDict = new Dictionary<string, TreasuryStock>();

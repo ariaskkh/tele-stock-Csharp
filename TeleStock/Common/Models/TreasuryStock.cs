@@ -17,6 +17,7 @@ namespace Common.Models
         public bool IsOrdinaryStock { get; init; }
         public string ExpectedAcquisitionMoney { get; init; }
         public string AcquisitionRateOfFloatingStock { get; init; }
+        public bool Corrected { get; set; } = false;
 
         public TreasuryStock(MajorInfoReport majorInfoReport, TreasuryDetailReport detailReport, string holdStockCount)
         {
@@ -32,12 +33,12 @@ namespace Common.Models
             IsOrdinaryStock = detailReport.IsOrdinaryStock;
             ExpectedAcquisitionMoney = detailReport.ExpectedAcquisitionMoney();
             AcquisitionRateOfFloatingStock = GetAcquisitionRateOfFloatingStock(detailReport, holdStockCount);
+            Corrected = detailReport.Corrected;
         }
 
         // db에서 Load할 때
         public TreasuryStock(JObject obj)
         {
-            var a =obj["ReceiptNumber"];
             ReceiptNumber = (string)obj["ReceiptNumber"];
             CorpName = (string)obj["CorpName"];
             StockCode = (string)obj["StockCode"];
@@ -50,10 +51,15 @@ namespace Common.Models
             IsOrdinaryStock = (bool)obj["IsOrdinaryStock"];
             ExpectedAcquisitionMoney = (string)obj["ExpectedAcquisitionMoney"];
             AcquisitionRateOfFloatingStock = (string)obj["AcquisitionRateOfFloatingStock"];
+            Corrected = (bool)obj["Corrected"];
         }
 
         private static string GetAcquisitionRateOfFloatingStock(TreasuryDetailReport detailReport, string holdStockCount)
         {
+            if (holdStockCount == "-")
+            {
+                return "-";
+            }
             var acquisitionStockNumber = detailReport.AcquisitionNumberOfOrdinaryStock != "-"
                     ? detailReport.AcquisitionNumberOfOrdinaryStock
                     : detailReport.AcquisitionNumberOfExtraordinaryStock ?? string.Empty;
