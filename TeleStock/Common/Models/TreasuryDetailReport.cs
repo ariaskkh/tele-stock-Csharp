@@ -61,7 +61,7 @@ namespace Common.Models
         public string OutsideDirectorAbsentCount { get; init; }
         
         public bool IsOrdinaryStock => AcquisitionNumberOfOrdinaryStock != "-" || AcquisitionPriceOfOrdinaryStock != "-";
-        public bool HasAcquisitionPriceData => AcquisitionPriceOfOrdinaryStock != "-" && AcquisitionPriceOfExtraordinaryStock != "-";
+        public bool HasAcquisitionPriceData => AcquisitionPriceOfOrdinaryStock != "-" || AcquisitionPriceOfExtraordinaryStock != "-";
         /// <summary> 공시 정정으로 ReceiptNumber 변경 여부</summary>
         public bool Corrected { get; set; } = false;
         public TreasuryDetailReport() { }

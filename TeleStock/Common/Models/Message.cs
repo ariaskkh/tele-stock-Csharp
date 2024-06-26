@@ -39,7 +39,7 @@ namespace Common.Models
             {
                 sb.AppendLine($"금액(원): {stock.ExpectedAcquisitionMoney}억 (기타주식)");
             }
-            sb.AppendLine($"유동주식수 대비 취득 %: {stock.AcquisitionRateOfFloatingStock} % (소액주주 기준)");
+            sb.AppendLine($"유동주식수 대비 취득: {stock.AcquisitionRateOfFloatingStock} % (소액주주 기준)");
             sb.AppendLine($"취득방법: {stock.AcquisitionMethod}");
             sb.AppendLine($"취득목적: {stock.AcquisitionPurpose}");
             sb.AppendLine($"시작일: {stock.ExpectedAcquisitionStartDate}");
