@@ -4,6 +4,7 @@ using Common.Interfaces;
 using Common.Models;
 using Newtonsoft.Json.Linq;
 using System.Net;
+using System.Text.Json;
 
 enum BusinessReportType
 {
@@ -117,14 +118,23 @@ namespace TelegramBot.Services
                 if (HttpStatusCode.OK == response.StatusCode)
                 {
                     string body = await response.Content.ReadAsStringAsync();
-                    JObject json = JObject.Parse(body);
-                    if (json.TryGetValue("list", out JToken majorInfoJson))
+                    using (JsonDocument doc = JsonDocument.Parse(body))
                     {
-                        majorInfoReportList = majorInfoJson.Select(majorInfo => new MajorInfoReport(majorInfo)).ToList();
+                        JsonElement root = doc.RootElement;
+                        if (root.TryGetProperty("list", out JsonElement majorInfoJson))
+                        {
+                            majorInfoReportList = majorInfoJson.EnumerateArray().Select(majorInfo => new MajorInfoReport(majorInfo)).ToList();
+                        }
+
+                        if (root.TryGetProperty("total_page", out JsonElement totalPageElement))
+                        {
+                            var totalPage = totalPageElement.GetInt32();
+                            if (_pageNumber == totalPage)
+                            {
+                                stopLoop = true;
+                            }
+                        }
                     }
-                    var totalPage = json["total_page"].ToObject<int>();
-                    if (_pageNumber == totalPage)
-                        stopLoop = true;
                     return (majorInfoReportList, stopLoop);
                 }
                 else
@@ -242,12 +252,15 @@ namespace TelegramBot.Services
                 if (HttpStatusCode.OK == response.StatusCode)
                 {
                     string body = await response.Content.ReadAsStringAsync();
-                    JObject json = JObject.Parse(body);
-
-                    if (json.TryGetValue("list", out JToken detailReportsJson) && detailReportsJson.Any())
+                    using (JsonDocument json = JsonDocument.Parse(body))
                     {
-                        return new TreasuryDetailReport(detailReportsJson.FirstOrDefault());
+                        JsonElement root = json.RootElement;
+                        if (root.TryGetProperty("list", out JsonElement detailReportsJson) && detailReportsJson.EnumerateArray().Any())
+                        {
+                            return new TreasuryDetailReport(detailReportsJson.EnumerateArray().FirstOrDefault());
+                        }
                     }
+                    
                 }
                 else
                 {
@@ -326,16 +339,14 @@ namespace TelegramBot.Services
                     if (HttpStatusCode.OK == response.StatusCode)
                     {
                         string body = await response.Content.ReadAsStringAsync();
-                        JObject json = JObject.Parse(body);
-
-                        if (json.TryGetValue("list", out JToken minorityShareholderReportsJson) && minorityShareholderReportsJson.Any())
+                        using (JsonDocument json = JsonDocument.Parse(body))
                         {
-                            var minorityShareholderReport = new MinorityShareholderStatusReport(minorityShareholderReportsJson.FirstOrDefault(), receiptNumber);
-                            return (true, minorityShareholderReport);
-                        }
-                        else
-                        {
-                            _logger.Log("Fail to get list property from minorityShareholderData");
+                            JsonElement root = json.RootElement;
+                            if (root.TryGetProperty("list", out JsonElement minorityShareholderReportsJson) && minorityShareholderReportsJson.EnumerateArray().Any())
+                            {
+                                var minorityShareholderReport = new MinorityShareholderStatusReport(minorityShareholderReportsJson.EnumerateArray().FirstOrDefault(), receiptNumber);
+                                return (true, minorityShareholderReport);
+                            }
                         }
                     }
                     else

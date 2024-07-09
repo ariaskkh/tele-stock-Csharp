@@ -1,6 +1,6 @@
 ﻿using Common.Interfaces;
 using Common.Models;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
 
 namespace Common.Database
 {
@@ -23,7 +23,7 @@ namespace Common.Database
             try
             {
                 var updatedSaavedData = await GetUpdatedSavedData(treasuryStockDict, option);
-                JObject json = JObject.FromObject(updatedSaavedData);
+                string json = JsonSerializer.Serialize(updatedSaavedData);
                 await File.WriteAllTextAsync(Path.Combine(option.FilePath, option.FileName), json.ToString());
             }
             catch (Exception ex)
@@ -54,12 +54,17 @@ namespace Common.Database
                 var path = Path.Combine(option.FilePath, option.FileName);
                 if (File.Exists(path))
                 {
+                    
                     string jsonData = await File.ReadAllTextAsync(path);
-                    var jsonObject = JObject.Parse(jsonData);
-                    return jsonObject
-                        .ToObject<Dictionary<string, JObject>>()
-                        .Select(keyValuePair => new TreasuryStock(keyValuePair.Value))
-                        .ToDictionary(treasuryStock => treasuryStock.ReceiptNumber);
+                    if (!string.IsNullOrEmpty(jsonData))
+                    {
+                        var treasuryStockDict = JsonSerializer.Deserialize<Dictionary<string, TreasuryStock>>(jsonData);
+                        return treasuryStockDict;
+                    }
+                    else
+                    {
+                        return new Dictionary<string, TreasuryStock>();
+                    }
                 }
                 else
                 {

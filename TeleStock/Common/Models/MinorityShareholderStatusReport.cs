@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using System.Text.Json;
 
 namespace Common.Models
 {
@@ -27,19 +27,19 @@ namespace Common.Models
         /// <summary> "hold_stock_rate", 보유 주식 비율 </summary>
         public string HoldStockRate { get; init; } 
 
-        public MinorityShareholderStatusReport(JToken minorityShareholderJson, string receiptNumber)
+        public MinorityShareholderStatusReport(JsonElement minorityShareholderJson, string receiptNumber)
         {
             ReceiptNumber = receiptNumber; // minority데이터에 없어서 detail에서 가져옴. key로 쓰임
-            CorpClass = (CorpClassType)Enum.Parse(typeof(CorpClassType), minorityShareholderJson["corp_cls"].ToString());
-            CorpCode = minorityShareholderJson["corp_code"].ToString();
-            CorpName = minorityShareholderJson["corp_name"].ToString();
-            Separation = minorityShareholderJson["se"].ToString();
-            ShareholderCount = minorityShareholderJson["shrholdr_co"].ToString();
-            ShareholderTotalCount = minorityShareholderJson["shrholdr_tot_co"].ToString();
-            ShareholderRate = minorityShareholderJson["shrholdr_rate"].ToString();
-            HoldStockCount = minorityShareholderJson["hold_stock_co"].ToString();
-            StockTotalCount = minorityShareholderJson["stock_tot_co"].ToString();
-            HoldStockRate = minorityShareholderJson["hold_stock_rate"].ToString();
+            CorpClass = (CorpClassType)Enum.Parse(typeof(CorpClassType), minorityShareholderJson.GetProperty("corp_cls").GetString() ?? string.Empty);
+            CorpCode = minorityShareholderJson.GetProperty("corp_code").GetString() ?? string.Empty;
+            CorpName = minorityShareholderJson.GetProperty("corp_name").GetString() ?? string.Empty;
+            Separation = minorityShareholderJson.GetProperty("se").GetString() ?? string.Empty;
+            ShareholderCount = minorityShareholderJson.GetProperty("shrholdr_co").GetString() ?? string.Empty;
+            ShareholderTotalCount = minorityShareholderJson.GetProperty("shrholdr_tot_co").GetString() ?? string.Empty;
+            ShareholderRate = minorityShareholderJson.GetProperty("shrholdr_rate").GetString() ?? string.Empty;
+            HoldStockCount = minorityShareholderJson.GetProperty("hold_stock_co").GetString() ?? string.Empty;
+            StockTotalCount = minorityShareholderJson.GetProperty("stock_tot_co").GetString() ?? string.Empty;
+            HoldStockRate = minorityShareholderJson.GetProperty("hold_stock_rate").GetString() ?? string.Empty;
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿
+using System.Text.Json;
 
 namespace Common.Models
 {
@@ -37,21 +38,21 @@ namespace Common.Models
         }
 
         // db에서 Load할 때
-        public TreasuryStock(JObject obj)
+        public TreasuryStock(JsonElement obj)
         {
-            ReceiptNumber = (string)obj["ReceiptNumber"];
-            CorpName = (string)obj["CorpName"];
-            StockCode = (string)obj["StockCode"];
-            ReportName = (string)obj["ReportName"];
-            AcquisitionMethod = (string)obj["AcquisitionMethod"];
-            AcquisitionPurpose = (string)obj["AcquisitionPurpose"];
-            ExpectedAcquisitionStartDate = (string)obj["ExpectedAcquisitionStartDate"];
-            ExpectedAcquisitionEndDate = (string)obj["ExpectedAcquisitionEndDate"];
-            PlannedAcquisitionPriceOfOrdinaryStock = (string)obj["PlannedAcquisitionPriceOfOrdinaryStock"];
-            IsOrdinaryStock = (bool)obj["IsOrdinaryStock"];
-            ExpectedAcquisitionMoney = (string)obj["ExpectedAcquisitionMoney"];
-            AcquisitionRateOfFloatingStock = (string)obj["AcquisitionRateOfFloatingStock"];
-            Corrected = (bool)obj["Corrected"];
+            ReceiptNumber = obj.GetProperty("ReceiptNumber").GetString() ?? string.Empty;
+            CorpName = obj.GetProperty("CorpName").GetString() ?? string.Empty;
+            StockCode = obj.GetProperty("StockCode").GetString() ?? string.Empty;
+            ReportName = obj.GetProperty("ReportName").GetString() ?? string.Empty;
+            AcquisitionMethod = obj.GetProperty("AcquisitionMethod").GetString() ?? string.Empty;
+            AcquisitionPurpose = obj.GetProperty("AcquisitionPurpose").GetString() ?? string.Empty;
+            ExpectedAcquisitionStartDate = obj.GetProperty("ExpectedAcquisitionStartDate").GetString() ?? string.Empty;
+            ExpectedAcquisitionEndDate = obj.GetProperty("ExpectedAcquisitionEndDate").GetString() ?? string.Empty;
+            PlannedAcquisitionPriceOfOrdinaryStock = obj.GetProperty("PlannedAcquisitionPriceOfOrdinaryStock").GetString() ?? string.Empty;
+            IsOrdinaryStock = obj.GetProperty("IsOrdinaryStock").GetBoolean();
+            ExpectedAcquisitionMoney = obj.GetProperty("ExpectedAcquisitionMoney").GetString() ?? string.Empty;
+            AcquisitionRateOfFloatingStock = obj.GetProperty("AcquisitionRateOfFloatingStock").GetString() ?? string.Empty;
+            Corrected = obj.GetProperty("Corrected").GetBoolean();
         }
 
         private static string GetAcquisitionRateOfFloatingStock(TreasuryDetailReport detailReport, string holdStockCount)

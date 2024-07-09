@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using System.Text.Json;
 
 namespace Common.Models
 {
@@ -23,17 +23,16 @@ namespace Common.Models
 
         public MajorInfoReport() { }
 
-        public MajorInfoReport(JToken majorInfo)
+        public MajorInfoReport(JsonElement majorInfo)
         {
-            var a = majorInfo["rcept_no"];
-            ReceiptNumber = majorInfo["rcept_no"].ToString();
-            ReceiptDate = majorInfo["rcept_dt"].ToString();
-            CorpClass = (CorpClassType)Enum.Parse(typeof(CorpClassType), majorInfo["corp_cls"].ToString());
-            CorpCode = majorInfo["corp_code"].ToString();
-            CorpName = majorInfo["corp_name"].ToString();
-            ReportName = majorInfo["report_nm"].ToString();
-            StockCode = majorInfo["stock_code"].ToString();
-            Remarks = majorInfo["rm"].ToString();
+            ReceiptNumber = majorInfo.GetProperty("rcept_no").GetString() ?? string.Empty;
+            ReceiptDate = majorInfo.GetProperty("rcept_dt").GetString() ?? string.Empty;
+            CorpClass = (CorpClassType)Enum.Parse(typeof(CorpClassType), majorInfo.GetProperty("corp_cls").GetString() ?? string.Empty);
+            CorpCode = majorInfo.GetProperty("corp_code").GetString() ?? string.Empty;
+            CorpName = majorInfo.GetProperty("corp_name").GetString() ?? string.Empty;
+            ReportName = majorInfo.GetProperty("report_nm").GetString() ?? string.Empty;
+            StockCode = majorInfo.GetProperty("stock_code").GetString() ?? string.Empty;
+            Remarks = majorInfo.GetProperty("rm").GetString() ?? string.Empty;
         }
     }
 }
