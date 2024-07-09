@@ -1,5 +1,6 @@
 ﻿
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Common.Models
 {
@@ -20,6 +21,37 @@ namespace Common.Models
         public string AcquisitionRateOfFloatingStock { get; init; }
         public bool Corrected { get; set; } = false;
 
+        [JsonConstructor]
+        public TreasuryStock(
+        string receiptNumber,
+        string corpName,
+        string stockCode,
+        string reportName,
+        string acquisitionMethod,
+        string acquisitionPurpose,
+        string expectedAcquisitionStartDate,
+        string expectedAcquisitionEndDate,
+        string plannedAcquisitionPriceOfOrdinaryStock,
+        bool isOrdinaryStock,
+        string expectedAcquisitionMoney,
+        string acquisitionRateOfFloatingStock,
+        bool corrected)
+        {
+            ReceiptNumber = receiptNumber;
+            CorpName = corpName;
+            StockCode = stockCode;
+            ReportName = reportName;
+            AcquisitionMethod = acquisitionMethod;
+            AcquisitionPurpose = acquisitionPurpose;
+            ExpectedAcquisitionStartDate = expectedAcquisitionStartDate;
+            ExpectedAcquisitionEndDate = expectedAcquisitionEndDate;
+            PlannedAcquisitionPriceOfOrdinaryStock = plannedAcquisitionPriceOfOrdinaryStock;
+            IsOrdinaryStock = isOrdinaryStock;
+            ExpectedAcquisitionMoney = expectedAcquisitionMoney;
+            AcquisitionRateOfFloatingStock = acquisitionRateOfFloatingStock;
+            Corrected = corrected;
+        }
+
         public TreasuryStock(MajorInfoReport majorInfoReport, TreasuryDetailReport detailReport, string holdStockCount)
         {
             ReceiptNumber = majorInfoReport.ReceiptNumber;
@@ -35,24 +67,6 @@ namespace Common.Models
             ExpectedAcquisitionMoney = detailReport.ExpectedAcquisitionMoney();
             AcquisitionRateOfFloatingStock = GetAcquisitionRateOfFloatingStock(detailReport, holdStockCount);
             Corrected = detailReport.Corrected;
-        }
-
-        // db에서 Load할 때
-        public TreasuryStock(JsonElement obj)
-        {
-            ReceiptNumber = obj.GetProperty("ReceiptNumber").GetString() ?? string.Empty;
-            CorpName = obj.GetProperty("CorpName").GetString() ?? string.Empty;
-            StockCode = obj.GetProperty("StockCode").GetString() ?? string.Empty;
-            ReportName = obj.GetProperty("ReportName").GetString() ?? string.Empty;
-            AcquisitionMethod = obj.GetProperty("AcquisitionMethod").GetString() ?? string.Empty;
-            AcquisitionPurpose = obj.GetProperty("AcquisitionPurpose").GetString() ?? string.Empty;
-            ExpectedAcquisitionStartDate = obj.GetProperty("ExpectedAcquisitionStartDate").GetString() ?? string.Empty;
-            ExpectedAcquisitionEndDate = obj.GetProperty("ExpectedAcquisitionEndDate").GetString() ?? string.Empty;
-            PlannedAcquisitionPriceOfOrdinaryStock = obj.GetProperty("PlannedAcquisitionPriceOfOrdinaryStock").GetString() ?? string.Empty;
-            IsOrdinaryStock = obj.GetProperty("IsOrdinaryStock").GetBoolean();
-            ExpectedAcquisitionMoney = obj.GetProperty("ExpectedAcquisitionMoney").GetString() ?? string.Empty;
-            AcquisitionRateOfFloatingStock = obj.GetProperty("AcquisitionRateOfFloatingStock").GetString() ?? string.Empty;
-            Corrected = obj.GetProperty("Corrected").GetBoolean();
         }
 
         private static string GetAcquisitionRateOfFloatingStock(TreasuryDetailReport detailReport, string holdStockCount)

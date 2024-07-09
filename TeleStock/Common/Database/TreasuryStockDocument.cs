@@ -1,5 +1,6 @@
 ﻿using Common.Interfaces;
 using Common.Models;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 
 namespace Common.Database
@@ -23,8 +24,13 @@ namespace Common.Database
             try
             {
                 var updatedSaavedData = await GetUpdatedSavedData(treasuryStockDict, option);
-                string json = JsonSerializer.Serialize(updatedSaavedData);
-                await File.WriteAllTextAsync(Path.Combine(option.FilePath, option.FileName), json.ToString());
+                var options = new JsonSerializerOptions
+                {
+                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                    WriteIndented = true,
+                };
+                string json = JsonSerializer.Serialize(updatedSaavedData, options);
+                await File.WriteAllTextAsync(Path.Combine(option.FilePath, option.FileName), json);
             }
             catch (Exception ex)
             {
@@ -36,12 +42,16 @@ namespace Common.Database
         private async Task<Dictionary<string, TreasuryStock>> GetUpdatedSavedData(Dictionary<string, TreasuryStock> treasuryStockDict, FileOption option)
         {
             var savedData = await LoadAsync(option);
-            if (savedData?.Any() ?? false)
+            foreach (var stock in treasuryStockDict)
             {
-                foreach (var stock in treasuryStockDict)
+                if (savedData.ContainsKey(stock.Key))
+                {
+                }
+                else
                 {
                     savedData[stock.Key] = stock.Value;
                 }
+                
             }
             return savedData;
         }
