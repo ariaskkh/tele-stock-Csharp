@@ -3,19 +3,19 @@ using Common.Models;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 
-namespace Common.Database
+namespace Common.Repository
 {
-    public interface ITreasuryStockDocument
+    public interface ITreasuryStockRepository
     {
         Task SaveAsync(Dictionary<string, TreasuryStock> treasuryStockDict, FileOption? option);
         Task<Dictionary<string, TreasuryStock>> LoadAsync(FileOption? option);
     }
 
-    public class TreasuryStockDocument : ITreasuryStockDocument
+    public class TreasuryStockRepository : ITreasuryStockRepository
     {
         private ILogger _logger;
 
-        public TreasuryStockDocument(ILogger logger)
+        public TreasuryStockRepository(ILogger logger)
         {
             _logger = logger;
         }
@@ -51,7 +51,7 @@ namespace Common.Database
                 {
                     savedData[stock.Key] = stock.Value;
                 }
-                
+
             }
             return savedData;
         }
@@ -64,7 +64,7 @@ namespace Common.Database
                 var path = Path.Combine(option.FilePath, option.FileName);
                 if (File.Exists(path))
                 {
-                    
+
                     string jsonData = await File.ReadAllTextAsync(path);
                     if (!string.IsNullOrEmpty(jsonData))
                     {
@@ -96,7 +96,7 @@ namespace Common.Database
         public string FilePath = "../../../../TelegramBot/Data";
 
         public FileOption() { }
-        
+
         public FileOption(string fileName, string filePath)
         {
             FileName = fileName;

@@ -1,7 +1,5 @@
-using Common.Database;
 using Common.Interfaces;
-using Common.Models;
-using TelegramBot;
+using Common.Repository;
 
 namespace TelegramBotClient
 {
@@ -19,7 +17,7 @@ namespace TelegramBotClient
         void InittializeTelegramBot()
         {
             _logger = new Logger(textBox1);
-            var db = new TreasuryStockDocument(_logger);
+            var db = new TreasuryStockRepository(_logger);
             _telegramBot = new TelegramBot.TelegramBot(_logger, db);
         }
 

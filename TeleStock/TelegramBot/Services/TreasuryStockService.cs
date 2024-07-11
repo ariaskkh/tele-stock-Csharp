@@ -1,8 +1,7 @@
-﻿using Common.Database;
-using Common.Extensions;
+﻿using Common.Extensions;
 using Common.Interfaces;
 using Common.Models;
-using Newtonsoft.Json.Linq;
+using Common.Repository;
 using System.Net;
 using System.Text.Json;
 
@@ -25,9 +24,9 @@ namespace TelegramBot.Services
         private List<TreasuryDetailReport> _detailReportList = new();
         private List<MinorityShareholderStatusReport> _minorityShareholderDataList = new();
         private Dictionary<string, TreasuryStock> _treasuryStockDict = new();
-        private ITreasuryStockDocument _db;
+        private ITreasuryStockRepository _db;
 
-        public TreasuryStockService(ILogger logger, ITreasuryStockDocument db)
+        public TreasuryStockService(ILogger logger, ITreasuryStockRepository db)
         {
             _logger = logger;
             _db = db;

@@ -1,6 +1,6 @@
-﻿using Common.Database;
-using Common.Interfaces;
+﻿using Common.Interfaces;
 using Common.Models;
+using Common.Repository;
 using Scheduler;
 using Telegram.Bot;
 using TelegramBot.Services;
@@ -14,7 +14,7 @@ namespace TelegramBot
         TreasuryStockScheduler _scheduler;
         ILogger _logger;
 
-        public TelegramBot(ILogger logger, ITreasuryStockDocument db)
+        public TelegramBot(ILogger logger, ITreasuryStockRepository db)
         {
             _botClient = new TelegramBotClient(PrivateData.ACCESS_TOKEN);
             _treasuryStockService = new TreasuryStockService(logger, db);
