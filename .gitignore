@@ -2,3 +2,4 @@
 obj/
 bin/
 PrivateData.cs
+docker/
