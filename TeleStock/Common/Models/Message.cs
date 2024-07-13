@@ -5,7 +5,7 @@ namespace Common.Models
     public class Message
     {
         private TreasuryStock stock;
-        public string MessageContent {get; set;}
+        public string MessageContent { get; set; } = string.Empty;
         
         public Message(TreasuryStock stock)
         {

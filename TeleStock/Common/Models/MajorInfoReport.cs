@@ -12,7 +12,7 @@ namespace Common.Models
 
     public class MajorInfoReport
     {
-        public string ReceiptNumber { get; init; } // unique
+        public required string ReceiptNumber { get; init; } // unique
         public CorpClassType CorpClass { get; init; } 
         public string CorpCode { get; init; }
         public string CorpName { get; init; }

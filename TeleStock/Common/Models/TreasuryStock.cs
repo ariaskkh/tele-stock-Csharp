@@ -32,6 +32,7 @@ namespace Common.Models
         string expectedAcquisitionStartDate,
         string expectedAcquisitionEndDate,
         string plannedAcquisitionPriceOfOrdinaryStock,
+        string plannedAcquisitionPriceOfExtraOrdinaryStock,
         bool isOrdinaryStock,
         string expectedAcquisitionMoney,
         string acquisitionRateOfFloatingStock,
@@ -46,13 +47,14 @@ namespace Common.Models
             ExpectedAcquisitionStartDate = expectedAcquisitionStartDate;
             ExpectedAcquisitionEndDate = expectedAcquisitionEndDate;
             PlannedAcquisitionPriceOfOrdinaryStock = plannedAcquisitionPriceOfOrdinaryStock;
+            PlannedAcquisitionPriceOfExtraordinaryStock = plannedAcquisitionPriceOfExtraOrdinaryStock;
             IsOrdinaryStock = isOrdinaryStock;
             ExpectedAcquisitionMoney = expectedAcquisitionMoney;
             AcquisitionRateOfFloatingStock = acquisitionRateOfFloatingStock;
             Corrected = corrected;
         }
 
-        public TreasuryStock(MajorInfoReport majorInfoReport, TreasuryDetailReport detailReport, string holdStockCount)
+        public TreasuryStock(MajorInfoReport majorInfoReport, TreasuryDetailReport detailReport, string? holdStockCount)
         {
             ReceiptNumber = majorInfoReport.ReceiptNumber;
             CorpName = majorInfoReport.CorpName;
@@ -63,15 +65,16 @@ namespace Common.Models
             ExpectedAcquisitionStartDate = detailReport.ExpectedAcquisitionStartDate;
             ExpectedAcquisitionEndDate = detailReport.ExpectedAcquisitionEndDate;
             PlannedAcquisitionPriceOfOrdinaryStock = detailReport.AcquisitionPriceOfOrdinaryStock;
+            PlannedAcquisitionPriceOfExtraordinaryStock = detailReport.AcquisitionPriceOfExtraordinaryStock;
             IsOrdinaryStock = detailReport.IsOrdinaryStock;
             ExpectedAcquisitionMoney = detailReport.ExpectedAcquisitionMoney();
             AcquisitionRateOfFloatingStock = GetAcquisitionRateOfFloatingStock(detailReport, holdStockCount);
             Corrected = detailReport.Corrected;
         }
 
-        private static string GetAcquisitionRateOfFloatingStock(TreasuryDetailReport detailReport, string holdStockCount)
+        private static string GetAcquisitionRateOfFloatingStock(TreasuryDetailReport detailReport, string? holdStockCount)
         {
-            if (holdStockCount == "-")
+            if (string.IsNullOrEmpty(holdStockCount) || holdStockCount == "-")
             {
                 return "-";
             }

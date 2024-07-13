@@ -20,8 +20,8 @@ namespace TelegramBot.Services
         static readonly HttpClient _httpClient = new HttpClient();
         readonly ILogger _logger;
         
-        private List<MajorInfoReport> _majorInfoReportList = new();
-        private List<TreasuryDetailReport> _detailReportList = new();
+        private List<MajorInfoReport>? _majorInfoReportList = new();
+        private List<TreasuryDetailReport>? _detailReportList = new();
         private List<MinorityShareholderStatusReport> _minorityShareholderDataList = new();
         private Dictionary<string, TreasuryStock> _treasuryStockDict = new();
         private ITreasuryStockRepository _db;
@@ -43,20 +43,37 @@ namespace TelegramBot.Services
         {
             _treasuryStockDict = new(); // 초기화
             _majorInfoReportList = await GetMajorInfoReportList();
-            if (_majorInfoReportList?.Any() ?? false)
+            if (_majorInfoReportList == null || !_majorInfoReportList.Any())
             {
-                _detailReportList = await GetTreasuryDetailReport(_majorInfoReportList);
-                _minorityShareholderDataList = await GetMinorityShareholderStatusData(_detailReportList);
-                _treasuryStockDict = MergeData(_majorInfoReportList, _detailReportList, _minorityShareholderDataList);
-                SaveOverviewJson(_treasuryStockDict);
+                return;    
             }
+
+            _detailReportList = await GetTreasuryDetailReport(_majorInfoReportList);
+            if (_detailReportList == null || !_detailReportList.Any())
+            {
+                return;   
+            }
+            _minorityShareholderDataList = await GetMinorityShareholderStatusData(_detailReportList);
+            if (_minorityShareholderDataList == null || !_minorityShareholderDataList.Any())
+            {
+                return;
+            }
+            _treasuryStockDict = MergeData(_majorInfoReportList, _detailReportList, _minorityShareholderDataList);
+            await SaveOverviewJson(_treasuryStockDict);
         }
 
-        private async Task<List<MajorInfoReport>> GetMajorInfoReportList()
+        private async Task<List<MajorInfoReport>?> GetMajorInfoReportList()
         {   
-            List<MajorInfoReport> majorInfoReportList = await GetMajorInfoReportListAsync();
-            var TreasuryMajorInfoReport = FilterMajorInfoReport(majorInfoReportList);
-            return await FilterSavedData(TreasuryMajorInfoReport);
+            List<MajorInfoReport>? majorInfoReportList = await GetMajorInfoReportListAsync();
+            if (majorInfoReportList?.Any() ?? false)
+            {
+                var TreasuryMajorInfoReport = FilterMajorInfoReport(majorInfoReportList);
+                return await FilterSavedData(TreasuryMajorInfoReport);
+            }
+            else
+            {
+                return default;
+            }
         }
 
         private async Task<List<MajorInfoReport>?> GetMajorInfoReportListAsync()
@@ -108,7 +125,7 @@ namespace TelegramBot.Services
             return majorInfoReportList;
         }
 
-        private async Task<(List<MajorInfoReport> majorInfoReportList, bool stopLoop)> FetchMajorInfoReportAsync(string url, int _pageNumber)
+        private async Task<(List<MajorInfoReport>? majorInfoReportList, bool stopLoop)> FetchMajorInfoReportAsync(string url, int _pageNumber)
         {
             List<MajorInfoReport> majorInfoReportList = new();
             bool stopLoop = false;
@@ -176,7 +193,7 @@ namespace TelegramBot.Services
             }
         }
 
-        private async Task<List<TreasuryDetailReport>> GetTreasuryDetailReport(List<MajorInfoReport> MajorInfoReportList)
+        private async Task<List<TreasuryDetailReport>?> GetTreasuryDetailReport(List<MajorInfoReport> MajorInfoReportList)
         {
             if (_majorInfoReportList is not null && _majorInfoReportList.Count == 0)
             {
@@ -231,20 +248,20 @@ namespace TelegramBot.Services
         }
 
         // 공시 정정으로 ReceiptNumber 변경되었는지 확인. majorInfoReceiptNumber가 original이다.
-        private void CheckReportCorrected(TreasuryDetailReport treasuryDetailReport, string majorInfoReceiptNumber)
+        private void CheckReportCorrected(TreasuryDetailReport? treasuryDetailReport, string majorInfoReceiptNumber)
         {
-            if (treasuryDetailReport.ReceiptNumber != majorInfoReceiptNumber)
+            if (treasuryDetailReport == null || treasuryDetailReport.ReceiptNumber == majorInfoReceiptNumber)
+            {
+                return;
+            }
+            else
             {
                 treasuryDetailReport.ReceiptNumber = majorInfoReceiptNumber;
                 treasuryDetailReport.Corrected = true;
             }
-            else
-            {
-                return;
-            }
         }
 
-        private async Task<TreasuryDetailReport> FetchTreasuryDetailReportAsync(string url)
+        private async Task<TreasuryDetailReport?> FetchTreasuryDetailReportAsync(string url)
         {
             using (var response = await _httpClient.GetAsync(url))
             {
@@ -290,7 +307,7 @@ namespace TelegramBot.Services
             foreach (var detailReport in detailReportList)
             {
                 var result = await GetMinorityShareholderDataFromLatestReport(latestReportCodeList, detailReport);
-                if (result.isFetchSuccess && result.minorityShareholderReport!= null)
+                if (result.isFetchSuccess && result.minorityShareholderReport != null)
                 {
                     minorityShareholderReportList.Add(result.minorityShareholderReport);
                 }
@@ -302,7 +319,7 @@ namespace TelegramBot.Services
             return minorityShareholderReportList;
         }
 
-        private async Task<(bool isFetchSuccess, MinorityShareholderStatusReport minorityShareholderReport)> GetMinorityShareholderDataFromLatestReport(
+        private async Task<(bool isFetchSuccess, MinorityShareholderStatusReport? minorityShareholderReport)> GetMinorityShareholderDataFromLatestReport(
             List<BusinessReportType> latestReportCodeList,
             TreasuryDetailReport detailReport)
         {
@@ -329,7 +346,7 @@ namespace TelegramBot.Services
 
 
 
-        private async Task<(bool isFetchSuccess, MinorityShareholderStatusReport minorityShareholderReport)> TryGetMinorityShareholderReportAsync(string baseUrl, Dictionary<string, string> parameters, string receiptNumber)
+        private async Task<(bool isFetchSuccess, MinorityShareholderStatusReport? minorityShareholderReport)> TryGetMinorityShareholderReportAsync(string baseUrl, Dictionary<string, string> parameters, string receiptNumber)
         {
             try
             {
@@ -418,12 +435,10 @@ namespace TelegramBot.Services
         // 
         private Dictionary<string, TreasuryStock> MergeData(List<MajorInfoReport> majorInfoReportList, List<TreasuryDetailReport> detailReportList, List<MinorityShareholderStatusReport> minorityShareholderReportList)
         {
-            var treasuryStockDict = new Dictionary<string, TreasuryStock>();
-
             return majorInfoReportList.Select(majorInfoReport =>
             {
-                var reciptNumber = majorInfoReport.ReceiptNumber ?? string.Empty; // unique key
-                var detailReport = detailReportList.Find(detaildata => detaildata.ReceiptNumber == reciptNumber);
+                var reciptNumber = majorInfoReport.ReceiptNumber; // unique key
+                var detailReport = detailReportList.Find(detaildata => detaildata.ReceiptNumber == reciptNumber) ?? new();
                 var minorityShareholderReport = minorityShareholderReportList.Find(minoritydata => minoritydata.ReceiptNumber == reciptNumber);
                 return new TreasuryStock(majorInfoReport, detailReport, minorityShareholderReport.HoldStockCount);
             }).ToDictionary(

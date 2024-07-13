@@ -5,7 +5,7 @@ namespace Common.Models
     public class MinorityShareholderStatusReport
     {
         /// <summary> "rcept_no", 접수번호 </summary>
-        public string ReceiptNumber { get; init; }
+        public required string ReceiptNumber { get; init; }
         /// <summary> "corp_cls", 법인구분 </summary>
         public CorpClassType CorpClass { get; init; }
         /// <summary> "corp_code, 고유번호 </summary>

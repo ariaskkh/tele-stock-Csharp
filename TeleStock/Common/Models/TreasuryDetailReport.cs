@@ -5,7 +5,7 @@ namespace Common.Models
     public class TreasuryDetailReport 
     {
         /// <summary> rcept_no, 접수번호 </summary>
-        public string ReceiptNumber { get; set; }
+        public required string ReceiptNumber { get; set; }
         /// <summary> adt_a_atn, 감사(사외이사가 아닌 감사위원)참석여부 </summary>
         public string AuditAttendance { get; init; }
         /// <summary> aq_dd </summary>
