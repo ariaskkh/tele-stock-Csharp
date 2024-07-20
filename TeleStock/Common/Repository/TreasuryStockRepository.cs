@@ -8,7 +8,7 @@ namespace Common.Repository
     public interface ITreasuryStockRepository
     {
         Task SaveAsync(Dictionary<string, TreasuryStock> treasuryStockDict, FileOption? option);
-        Task<Dictionary<string, TreasuryStock>> LoadAsync(FileOption? option);
+        Task<Dictionary<string, TreasuryStock>> LoadAllAsync(FileOption? option);
     }
 
     public class TreasuryStockRepository : ITreasuryStockRepository
@@ -41,7 +41,7 @@ namespace Common.Repository
 
         private async Task<Dictionary<string, TreasuryStock>> GetUpdatedSavedData(Dictionary<string, TreasuryStock> treasuryStockDict, FileOption option)
         {
-            var savedData = await LoadAsync(option);
+            var savedData = await LoadAllAsync(option);
             foreach (var stock in treasuryStockDict)
             {
                 if (savedData.ContainsKey(stock.Key))
@@ -57,7 +57,7 @@ namespace Common.Repository
         }
 
         // 파일 없을 때 LoadAsync 에러 나는지 확인
-        public async Task<Dictionary<string, TreasuryStock>> LoadAsync(FileOption option)
+        public async Task<Dictionary<string, TreasuryStock>> LoadAllAsync(FileOption option)
         {
             try
             {

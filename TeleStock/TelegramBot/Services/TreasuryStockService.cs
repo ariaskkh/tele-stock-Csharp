@@ -178,7 +178,7 @@ namespace TelegramBot.Services
 
         private async Task<List<MajorInfoReport>> FilterSavedData(List<MajorInfoReport> majorInfoReport)
         {
-            Dictionary<string, TreasuryStock> savedTreasuryStockDict = await _db.LoadAsync(new FileOption());
+            Dictionary<string, TreasuryStock> savedTreasuryStockDict = await _db.LoadAllAsync(new FileOption());
             return majorInfoReport
                 .Where(majorInfoReport => !savedTreasuryStockDict.ContainsKey(majorInfoReport.ReceiptNumber))
                 .ToList();

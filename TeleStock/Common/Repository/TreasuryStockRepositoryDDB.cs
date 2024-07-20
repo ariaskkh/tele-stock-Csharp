@@ -98,13 +98,34 @@ public class TreasuryStockRepositoryDDB : ITreasuryStockRepository
         }
     }
 
-    public Task SaveAsync(Dictionary<string, TreasuryStock> treasuryStockDict, FileOption? option)
+    // interface 수정 필요. fileOption 필요 없음.
+    public async Task SaveAsync(Dictionary<string, TreasuryStock> treasuryStockDict, FileOption? option)
     {
-        throw new NotImplementedException();
+        try
+        {
+            foreach (var KV in treasuryStockDict)
+            {
+                await _context.SaveAsync<TreasuryStock>(KV.Value);
+            }
+        }
+        catch
+        {
+            _logger.Log("TreasuryStock save failed");
+        }
     }
 
-    public Task<Dictionary<string, TreasuryStock>> LoadAsync(FileOption? option)
+    public async Task<Dictionary<string, TreasuryStock>> LoadAllAsync(FileOption? option)
     {
-        throw new NotImplementedException();
+        try
+        {
+            var scanConditions = new List<ScanCondition>();
+            var response = await _context.ScanAsync<TreasuryStock>(scanConditions).GetRemainingAsync();
+            return response.ToDictionary(r => r.ReceiptNumber);
+        }
+        catch
+        {
+            _logger.Log("TreasuryStock Load failed");
+            return new Dictionary<string, TreasuryStock>();
+        }
     }
 }

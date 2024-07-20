@@ -1,11 +1,14 @@
 ﻿
+using Amazon.DynamoDBv2.DataModel;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Common.Models
 {
+    [DynamoDBTable("TreasuryStock")]
     public class TreasuryStock
     {
+        [DynamoDBHashKey] // Partition Key
         public string ReceiptNumber { get; init; }
         public string CorpName { get; init; }
         public string StockCode { get; init; }
@@ -20,6 +23,8 @@ namespace Common.Models
         public string ExpectedAcquisitionMoney { get; init; }
         public string AcquisitionRateOfFloatingStock { get; init; }
         public bool Corrected { get; set; } = false;
+
+        public TreasuryStock() { }
 
         [JsonConstructor]
         public TreasuryStock(
