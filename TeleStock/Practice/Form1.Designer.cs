@@ -30,30 +30,43 @@
         {
             startButton = new Button();
             textBox1 = new TextBox();
+            button1 = new Button();
             SuspendLayout();
             // 
             // startButton
             // 
-            startButton.Location = new Point(0, 0);
+            startButton.Location = new Point(41, 146);
             startButton.Name = "startButton";
             startButton.Size = new Size(94, 29);
             startButton.TabIndex = 0;
-            startButton.Text = "start";
+            startButton.Text = "create item";
             startButton.UseVisualStyleBackColor = true;
             startButton.Click += Start_Click;
             // 
             // textBox1
             // 
-            textBox1.Location = new Point(454, 411);
+            textBox1.Location = new Point(419, 97);
+            textBox1.Multiline = true;
             textBox1.Name = "textBox1";
-            textBox1.Size = new Size(334, 27);
+            textBox1.Size = new Size(369, 230);
             textBox1.TabIndex = 1;
+            // 
+            // button1
+            // 
+            button1.Location = new Point(41, 211);
+            button1.Name = "button1";
+            button1.Size = new Size(94, 29);
+            button1.TabIndex = 2;
+            button1.Text = "get item";
+            button1.UseVisualStyleBackColor = true;
+            button1.Click += GetItem;
             // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(9F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 450);
+            Controls.Add(button1);
             Controls.Add(textBox1);
             Controls.Add(startButton);
             Name = "Form1";
@@ -67,5 +80,7 @@
 
         private Button startButton;
         private TextBox textBox1;
+        private Button button1;
+        private Button addItemButton;
     }
 }
