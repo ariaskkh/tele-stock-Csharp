@@ -109,7 +109,7 @@ public class ProductService
                 },
                 { "Name", new AttributeValue
                 {
-                    S = "김강호"
+                    S = "김김호"
                 }
                 }
             },

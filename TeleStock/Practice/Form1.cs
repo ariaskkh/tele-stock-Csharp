@@ -43,46 +43,22 @@ namespace Practice
 
         private async Task CreateItem()
         {
-            //var product = new Product
-            //{
-            //    Id = 1,
-            //    Name = "Test",
-            //};
-
-            var product = new PutItemRequest
+            var request = new PutItemRequest
             {
                 TableName = "ProductTable",
-                Item = new Dictionary<string, AttributeValue>()
+                Item = new Product
                 {
-                    { "Id", new AttributeValue {
-                          N = "1000"
-                      }},
-                    { "Name", new AttributeValue {
-                          S = "�谭ȣ"
-                      }},
-                    { "Title", new AttributeValue {
-                          S = "Book 201 Title"
-                      }},
-                    { "ISBN", new AttributeValue {
-                          S = "11-11-11-11"
-                      }},
-                    { "Authors", new AttributeValue {
-                          SS = new List<string>{"Author1", "Author2" }
-                      }},
-                    { "Price", new AttributeValue {
-                          N = "20.00"
-                      }},
-                    { "Dimensions", new AttributeValue {
-                          S = "8.5x11.0x.75"
-                      }},
-                    { "InPublication", new AttributeValue {
-                          BOOL = false
-                      }},
-                }
+                    Id = 1000,
+                    Name = "�谭ȣ",
+                    Title = "Book 201 Title",
+                    ISBN = "11-11-11-11",
+                    Authors = new List<string> { "Author1", "Author2" },
+                    InPublication = false,
 
+                }.ToDictionary()
             };
 
-            await _service.PutItem(product);
+            await _service.PutItem(request);
         }
 
         private async void GetItem(object sender, EventArgs e)
