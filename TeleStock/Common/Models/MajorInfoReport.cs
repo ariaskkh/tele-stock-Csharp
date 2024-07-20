@@ -12,7 +12,7 @@ namespace Common.Models
 
     public class MajorInfoReport
     {
-        public required string ReceiptNumber { get; init; } // unique
+        public string ReceiptNumber { get; init; } // unique
         public CorpClassType CorpClass { get; init; } 
         public string CorpCode { get; init; }
         public string CorpName { get; init; }
@@ -21,7 +21,6 @@ namespace Common.Models
         public string StockCode { get; init; }
         public string Remarks { get; init; }
 
-        public MajorInfoReport() { }
 
         public MajorInfoReport(JsonElement majorInfo)
         {
