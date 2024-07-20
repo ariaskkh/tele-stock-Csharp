@@ -82,11 +82,12 @@ public class ProductService
         
     }
 
-    public async Task PutItem(PutItemRequest item)
+    public async Task PutItem(Product item)
     {
         try
         {
-            await _client.PutItemAsync(item);
+            //await _client.PutItemAsync(item); // Low level API provided by the 'DynamoDBClient
+            await _context.SaveAsync(item); // High level API provided by the 'DynamoDBClient
             _logger.Log("Item is created");
         }
         catch (Exception ex)

@@ -43,22 +43,17 @@ namespace Practice
 
         private async Task CreateItem()
         {
-            var request = new PutItemRequest
+            var product = new Product
             {
-                TableName = "ProductTable",
-                Item = new Product
-                {
-                    Id = 1000,
-                    Name = "�谭ȣ",
-                    Title = "Book 201 Title",
-                    ISBN = "11-11-11-11",
-                    Authors = new List<string> { "Author1", "Author2" },
-                    InPublication = false,
-
-                }.ToDictionary()
+                Id = 1000,
+                Name = "�谭ȣ",
+                Title = "Book 201 Title",
+                ISBN = "11-11-11-11",
+                Authors = new List<string> { "Author1", "Author2" },
+                InPublication = false,
             };
 
-            await _service.PutItem(request);
+            await _service.PutItem(product);
         }
 
         private async void GetItem(object sender, EventArgs e)
